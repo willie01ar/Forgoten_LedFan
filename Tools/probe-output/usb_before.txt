@@ -1,0 +1,5 @@
++-o Root  <class IORegistryEntry, id 0x100000100, retain 35>
+  +-o AppleT6000USBXHCI@00000000  <class AppleT6000USBXHCI, id 0x1000003ef, registered, matched, active, busy 0 (5039 ms), retain 39>
+  +-o AppleT6000USBXHCI@02000000  <class AppleT6000USBXHCI, id 0x1000005ae, registered, matched, active, busy 0 (2393 ms), retain 100>
+  +-o AppleT6000USBXHCI@01000000  <class AppleT6000USBXHCI, id 0x1000004f9, registered, matched, active, busy 0 (7 ms), retain 39>
+--- device detail ---

@@ -1,0 +1,12 @@
+3c3,4
+<   +-o AppleT6000USBXHCI@02000000  <class AppleT6000USBXHCI, id 0x1000005ae, registered, matched, active, busy 0 (2393 ms), retain 100>
+---
+>   +-o AppleT6000USBXHCI@02000000  <class AppleT6000USBXHCI, id 0x1000005ae, registered, matched, active, busy 0 (2450 ms), retain 109>
+>   | +-o USB Device@02100000  <class IOUSBHostDevice, id 0x10002b8e5, registered, matched, active, busy 0 (56 ms), retain 24>
+5a7,12
+>   |   "idProduct" = 30465
+>   |   "bDeviceClass" = 0
+>   |   "bcdDevice" = 1
+>   |   "USB Product Name" = "USB Device"
+>   |   "USB Vendor Name" = "SONiX"
+>   |   "idVendor" = 3141

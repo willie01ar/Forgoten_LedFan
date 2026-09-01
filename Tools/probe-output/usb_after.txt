@@ -1,0 +1,12 @@
++-o Root  <class IORegistryEntry, id 0x100000100, retain 35>
+  +-o AppleT6000USBXHCI@00000000  <class AppleT6000USBXHCI, id 0x1000003ef, registered, matched, active, busy 0 (5039 ms), retain 39>
+  +-o AppleT6000USBXHCI@02000000  <class AppleT6000USBXHCI, id 0x1000005ae, registered, matched, active, busy 0 (2450 ms), retain 109>
+  | +-o USB Device@02100000  <class IOUSBHostDevice, id 0x10002b8e5, registered, matched, active, busy 0 (56 ms), retain 24>
+  +-o AppleT6000USBXHCI@01000000  <class AppleT6000USBXHCI, id 0x1000004f9, registered, matched, active, busy 0 (7 ms), retain 39>
+--- device detail ---
+  |   "idProduct" = 30465
+  |   "bDeviceClass" = 0
+  |   "bcdDevice" = 1
+  |   "USB Product Name" = "USB Device"
+  |   "USB Vendor Name" = "SONiX"
+  |   "idVendor" = 3141

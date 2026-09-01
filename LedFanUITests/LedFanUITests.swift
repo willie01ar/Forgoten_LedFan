@@ -1,43 +1,62 @@
-//
-//  LedFanUITests.swift
-//  LedFanUITests
-//
-//  Created by Williams Martinez on 9/1/26.
-//
-
 import XCTest
 
+/// Milestone 1 end to end: type, preview, connect to the simulated fan, send. No hardware.
+/// XCTest rather than Swift Testing because XCUIApplication requires it.
 final class LedFanUITests: XCTestCase {
-
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testTypingConnectingAndSendingOnTheSimulatedFan() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        let messageField = app.textFields["Message to display on the fan"]
+        XCTAssertTrue(messageField.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Simulated fan: Not connected"].exists)
+        XCTAssertTrue(app.otherElements["Fan preview showing HELLO"].exists)
+
+        let sendButton = app.buttons["Send the message to the fan"]
+        XCTAssertFalse(sendButton.isEnabled, "Send must be disabled until connected")
+
+        messageField.click()
+        messageField.typeKey("a", modifierFlags: .command)
+        messageField.typeText("FAN OK")
+        XCTAssertTrue(app.otherElements["Fan preview showing FAN OK"].waitForExistence(timeout: 2))
+
+        app.buttons["Connect to the fan"].click()
+        XCTAssertTrue(app.staticTexts["Simulated fan: Connected"].waitForExistence(timeout: 5))
+        XCTAssertTrue(sendButton.isEnabled)
+
+        sendButton.click()
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Error:'")).firstMatch.exists)
+        attachScreenshot(of: app, named: "Milestone 1")
+
+        app.buttons["Disconnect from the fan"].click()
+        XCTAssertTrue(app.staticTexts["Simulated fan: Not connected"].waitForExistence(timeout: 5))
+        XCTAssertFalse(sendButton.isEnabled)
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    func testLightAppearanceRendersTheSameControls() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-NSRequiresAquaSystemAppearance", "YES"]
+        app.launch()
+
+        XCTAssertTrue(app.textFields["Message to display on the fan"].waitForExistence(timeout: 5))
+        app.buttons["Connect to the fan"].click()
+        XCTAssertTrue(app.staticTexts["Simulated fan: Connected"].waitForExistence(timeout: 5))
+        attachScreenshot(of: app, named: "Light appearance")
+    }
+
+    // MARK: - Helpers
+
+    @MainActor
+    private func attachScreenshot(of app: XCUIApplication, named name: String) {
+        let attachment = XCTAttachment(screenshot: app.windows.firstMatch.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 }

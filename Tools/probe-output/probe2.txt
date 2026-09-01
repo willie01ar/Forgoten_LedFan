@@ -1,0 +1,87 @@
+=== SPUSBDataType ===
+=== serial ports ===
+crw-rw-rw-  1 root  wheel  0x9000003 Aug 29 14:51 /dev/cu.Bluetooth-Incoming-Port
+crw-rw-rw-  1 root  wheel  0x9000001 Aug 29 14:48 /dev/cu.debug-console
+=== IOUSB tree ===
++-o Root  <class IORegistryEntry, id 0x100000100, retain 35>
+  +-o AppleT6000USBXHCI@00000000  <class AppleT6000USBXHCI, id 0x1000003ef, registered, matched, active, busy 0 (29 ms), retain 39>
+  |     "IOClass" = "AppleT6000USBXHCI"
+  +-o AppleT6000USBXHCI@02000000  <class AppleT6000USBXHCI, id 0x1000005ae, registered, matched, active, busy 0 (1215 ms), retain 88>
+  |     "IOClass" = "AppleT6000USBXHCI"
+  +-o AppleT6000USBXHCI@01000000  <class AppleT6000USBXHCI, id 0x1000004f9, registered, matched, active, busy 0 (7 ms), retain 39>
+        "IOClass" = "AppleT6000USBXHCI"
+=== new HID ===
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000be1, registered, matched, active, busy 0 (229 ms), retain 10>
+  |   "VendorID" = 1452
+  |   "Product" = "Apple Internal Keyboard / Trackpad"
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "IOPersonalityPublisher" = "com.apple.driver.AppleHIDTransport"
+  |   "CFBundleIdentifier" = "com.apple.driver.AppleHIDTransport"
+  |   "IOProviderClass" = "AppleHIDTransportInterface"
+  |   "IOClass" = "AppleHIDTransportHIDDevice"
+  |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleHIDTransport"
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000be7, registered, matched, active, busy 0 (230 ms), retain 8>
+  |   "VendorID" = 1452
+  |   "Product" = "Apple Internal Keyboard / Trackpad"
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "IOPersonalityPublisher" = "com.apple.driver.AppleHIDTransport"
+  |   "CFBundleIdentifier" = "com.apple.driver.AppleHIDTransport"
+  |   "IOProviderClass" = "AppleHIDTransportInterface"
+  |   "IOClass" = "AppleHIDTransportHIDDevice"
+  |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleHIDTransport"
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000bed, registered, matched, active, busy 0 (72684 ms), retain 8>
+  |   "VendorID" = 1452
+  |   "Product" = "Apple Internal Keyboard / Trackpad"
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "IOPersonalityPublisher" = "com.apple.driver.AppleHIDTransport"
+  |   "CFBundleIdentifier" = "com.apple.driver.AppleHIDTransport"
+  |   "IOProviderClass" = "AppleHIDTransportInterface"
+  |   "IOClass" = "AppleHIDTransportHIDDevice"
+  |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleHIDTransport"
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000bf3, registered, matched, active, busy 0 (13455 ms), retain 8>
+  |   "VendorID" = 1452
+  |   "Product" = "Apple Internal Keyboard / Trackpad"
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "IOPersonalityPublisher" = "com.apple.driver.AppleHIDTransport"
+  |   "CFBundleIdentifier" = "com.apple.driver.AppleHIDTransport"
+  |   "IOProviderClass" = "AppleHIDTransportInterface"
+  |   "IOClass" = "AppleHIDTransportHIDDevice"
+  |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleHIDTransport"
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000bfa, registered, matched, active, busy 0 (3 ms), retain 8>
+  |   "VendorID" = 1452
+  |   "Product" = "Apple Internal Keyboard / Trackpad"
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "IOPersonalityPublisher" = "com.apple.driver.AppleHIDTransport"
+  |   "CFBundleIdentifier" = "com.apple.driver.AppleHIDTransport"
+  |   "IOProviderClass" = "AppleHIDTransportInterface"
+  |   "IOClass" = "AppleHIDTransportHIDDevice"
+  |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleHIDTransport"
+  |   "Transport" = "SPU"
+  |   "VendorID" = 1452
+  |   "ProductID" = 33028
+  |   "Transport" = "SPU"
+  |   "VendorID" = 1452
+  |   "ProductID" = 33028
+  |   "Transport" = "SPU"
+  |   "VendorID" = 1452
+  |   "Transport" = "SPU"
+  |   "ProductID" = 33028
+  |   "Transport" = "SPU"
+  |   "Transport" = "SPU"
+  |   "Transport" = "SPU"
+  |   "Transport" = "SPU"
+  |   "VendorID" = 1452
+  |   "ProductID" = 33028
+  |   "Transport" = "Audio"
+  |   "Product" = "Headset"
+  |   "Transport" = "SPMI"
+  |   "Product" = "BTM"
+  |   "Transport" = "USB"
+  |   "Product" = "Keyboard Backlight"
+  |   "VendorID" = 1452
+  |   "ProductID" = 835

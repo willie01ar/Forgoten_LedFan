@@ -1,0 +1,531 @@
+=== SPUSBDataType ===
+[exit 0]
+=== IOUSBHostDevice nodes ===
+  |   "bDeviceClass" = 0
+  |   "USB Vendor Name" = "Toshiba"
+  |   "USB Product Name" = "External USB 3.0"
+  |   "idVendor" = 1152
+  |   "idProduct" = 40966
+  |   "bDeviceClass" = 9
+  |   "USB Vendor Name" = "Apple Inc."
+  |   "USB Product Name" = "USB2.0 Hub"
+  |   "idVendor" = 1452
+  |   "idProduct" = 4111
+  | |   |   "bDeviceClass" = 17
+  | |   |   "USB Vendor Name" = "Apple Inc."
+  | |   |   "USB Product Name" = "USB-C Digital AV Multiport Adapter"
+  | |   |   "idVendor" = 1452
+  | |   |   "idProduct" = 5216
+  |   "bDeviceClass" = 9
+  |   "USB Vendor Name" = "Apple Inc."
+  |   "USB Product Name" = "USB3.0 Hub"
+  |   "idVendor" = 1452
+  |   "idProduct" = 4110
+=== full IOUSB plane ===
++-o Root  <class IORegistryEntry, id 0x100000100, retain 35>
+  +-o AppleT6000USBXHCI@00000000  <class AppleT6000USBXHCI, id 0x1000003ef, registered, matched, active, busy 0 (4999 ms), retain 51>
+  | +-o External USB 3.0@00200000  <class IOUSBHostDevice, id 0x10002b2aa, registered, matched, active, busy 0 (4970 ms), retain 24>
+  +-o AppleT6000USBXHCI@02000000  <class AppleT6000USBXHCI, id 0x1000005ae, registered, matched, active, busy 0 (1571 ms), retain 118>
+  | +-o USB3.0 Hub@02200000  <class IOUSBHostDevice, id 0x10002b547, registered, matched, active, busy 0 (26 ms), retain 23>
+  | +-o USB2.0 Hub@02100000  <class IOUSBHostDevice, id 0x10002b54a, registered, matched, active, busy 0 (35 ms), retain 26>
+  |   +-o USB-C Digital AV Multiport Adapter@02120000  <class IOUSBHostDevice, id 0x10002b570, registered, matched, active, busy 0 (7 ms), retain 15>
+  +-o AppleT6000USBXHCI@01000000  <class AppleT6000USBXHCI, id 0x1000004f9, registered, matched, active, busy 0 (7 ms), retain 39>
+=== external disks ===
+/dev/disk4 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.6 GB     disk4
+   1:                 Apple_APFS Container disk5         8.6 GB     disk4s1
+
+/dev/disk5 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.6 GB     disk5
+                                 Physical Store disk4s1
+   1:                APFS Volume iOS 18.0 Simulator B... 8.4 GB     disk5s1
+
+/dev/disk6 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +19.1 GB    disk6
+   1:                 Apple_APFS Container disk7         19.1 GB    disk6s1
+
+/dev/disk7 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +19.1 GB    disk7
+                                 Physical Store disk6s1
+   1:                APFS Volume iOS 18.0 Simulator      18.6 GB    disk7s1
+
+/dev/disk8 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +4.5 GB     disk8
+   1:                 Apple_APFS Container disk9         4.5 GB     disk8s1
+
+/dev/disk9 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +4.5 GB     disk9
+                                 Physical Store disk8s1
+   1:                APFS Volume AppleTVOS 18.2 Simul... 4.3 GB     disk9s1
+
+/dev/disk10 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +10.5 GB    disk10
+   1:                 Apple_APFS Container disk11        10.5 GB    disk10s1
+
+/dev/disk11 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +10.5 GB    disk11
+                                 Physical Store disk10s1
+   1:                APFS Volume AppleTVOS 18.2 Simul... 10.2 GB    disk11s1
+
+/dev/disk12 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.1 GB     disk12
+   1:                 Apple_APFS Container disk13        9.1 GB     disk12s1
+
+/dev/disk13 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.1 GB     disk13
+                                 Physical Store disk12s1
+   1:                APFS Volume WatchOS 26.4 Simulator  8.8 GB     disk13s1
+
+/dev/disk14 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.1 GB     disk14
+   1:                 Apple_APFS Container disk15        9.1 GB     disk14s1
+
+/dev/disk15 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.1 GB     disk15
+                                 Physical Store disk14s1
+   1:                APFS Volume XROS 2.2 Simulator B... 8.8 GB     disk15s1
+
+/dev/disk16 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +18.4 GB    disk16
+   1:                 Apple_APFS Container disk17        18.4 GB    disk16s1
+
+/dev/disk17 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +18.4 GB    disk17
+                                 Physical Store disk16s1
+   1:                APFS Volume XROS 2.2 Simulator      17.9 GB    disk17s1
+
+/dev/disk18 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +4.6 GB     disk18
+   1:                 Apple_APFS Container disk19        4.6 GB     disk18s1
+
+/dev/disk19 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +4.6 GB     disk19
+                                 Physical Store disk18s1
+   1:                APFS Volume AppleTVOS 18.4 Simul... 4.4 GB     disk19s1
+
+/dev/disk20 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +10.8 GB    disk20
+   1:                 Apple_APFS Container disk21        10.8 GB    disk20s1
+
+/dev/disk21 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +10.8 GB    disk21
+                                 Physical Store disk20s1
+   1:                APFS Volume AppleTVOS 18.4 Simul... 10.5 GB    disk21s1
+
+/dev/disk22 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.5 GB     disk22
+   1:                 Apple_APFS Container disk23        8.5 GB     disk22s1
+
+/dev/disk23 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.5 GB     disk23
+                                 Physical Store disk22s1
+   1:                APFS Volume XROS 2.5 Simulator B... 8.2 GB     disk23s1
+
+/dev/disk24 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +18.0 GB    disk24
+   1:                 Apple_APFS Container disk25        18.0 GB    disk24s1
+
+/dev/disk25 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +18.0 GB    disk25
+                                 Physical Store disk24s1
+   1:                APFS Volume XROS 2.5 Simulator      17.5 GB    disk25s1
+
+/dev/disk26 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +18.1 GB    disk26
+   1:                 Apple_APFS Container disk27        18.1 GB    disk26s1
+
+/dev/disk27 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +18.1 GB    disk27
+                                 Physical Store disk26s1
+   1:                APFS Volume iOS 26.5 Simulator      17.6 GB    disk27s1
+
+/dev/disk28 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.1 GB     disk28
+   1:                 Apple_APFS Container disk29        9.1 GB     disk28s1
+
+/dev/disk29 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.1 GB     disk29
+                                 Physical Store disk28s1
+   1:                APFS Volume iOS 18.5 Simulator B... 8.8 GB     disk29s1
+
+/dev/disk30 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +20.7 GB    disk30
+   1:                 Apple_APFS Container disk31        20.7 GB    disk30s1
+
+/dev/disk31 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +20.7 GB    disk31
+                                 Physical Store disk30s1
+   1:                APFS Volume iOS 18.5 Simulator      20.2 GB    disk31s1
+
+/dev/disk32 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +14.2 GB    disk32
+   1:                 Apple_APFS Container disk33        14.2 GB    disk32s1
+
+/dev/disk33 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +14.2 GB    disk33
+                                 Physical Store disk32s1
+   1:                APFS Volume XROS 26.2 Simulator     13.8 GB    disk33s1
+
+/dev/disk34 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.7 GB     disk34
+   1:                 Apple_APFS Container disk35        8.7 GB     disk34s1
+
+/dev/disk35 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.7 GB     disk35
+                                 Physical Store disk34s1
+   1:                APFS Volume XROS 2.0 Simulator B... 8.4 GB     disk35s1
+
+/dev/disk36 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +17.6 GB    disk36
+   1:                 Apple_APFS Container disk37        17.6 GB    disk36s1
+
+/dev/disk37 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +17.6 GB    disk37
+                                 Physical Store disk36s1
+   1:                APFS Volume XROS 2.0 Simulator      17.1 GB    disk37s1
+
+/dev/disk38 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +18.4 GB    disk38
+   1:                 Apple_APFS Container disk39        18.4 GB    disk38s1
+
+/dev/disk39 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +18.4 GB    disk39
+                                 Physical Store disk38s1
+   1:                APFS Volume iOS 27.0 Simulator      17.9 GB    disk39s1
+
+/dev/disk40 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +17.2 GB    disk40
+   1:                 Apple_APFS Container disk41        17.2 GB    disk40s1
+
+/dev/disk41 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +17.2 GB    disk41
+                                 Physical Store disk40s1
+   1:                APFS Volume iOS 26.0 Simulator      16.7 GB    disk41s1
+
+/dev/disk42 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +4.6 GB     disk42
+   1:                 Apple_APFS Container disk43        4.6 GB     disk42s1
+
+/dev/disk43 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +4.6 GB     disk43
+                                 Physical Store disk42s1
+   1:                APFS Volume AppleTVOS 18.5 Simul... 4.4 GB     disk43s1
+
+/dev/disk44 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +10.8 GB    disk44
+   1:                 Apple_APFS Container disk45        10.8 GB    disk44s1
+
+/dev/disk45 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +10.8 GB    disk45
+                                 Physical Store disk44s1
+   1:                APFS Volume AppleTVOS 18.5 Simul... 10.5 GB    disk45s1
+
+/dev/disk46 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.5 GB     disk46
+   1:                 Apple_APFS Container disk47        8.5 GB     disk46s1
+
+/dev/disk47 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.5 GB     disk47
+                                 Physical Store disk46s1
+   1:                APFS Volume XROS 2.4 Simulator B... 8.2 GB     disk47s1
+
+/dev/disk48 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +17.9 GB    disk48
+   1:                 Apple_APFS Container disk49        17.9 GB    disk48s1
+
+/dev/disk49 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +17.9 GB    disk49
+                                 Physical Store disk48s1
+   1:                APFS Volume XROS 2.4 Simulator      17.4 GB    disk49s1
+
+/dev/disk50 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +17.4 GB    disk50
+   1:                 Apple_APFS Container disk51        17.4 GB    disk50s1
+
+/dev/disk51 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +17.4 GB    disk51
+                                 Physical Store disk50s1
+   1:                APFS Volume iOS 17.2 21C62 Simul... 16.9 GB    disk51s1
+
+/dev/disk52 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +17.6 GB    disk52
+   1:                 Apple_APFS Container disk53        17.6 GB    disk52s1
+
+/dev/disk53 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +17.6 GB    disk53
+                                 Physical Store disk52s1
+   1:                APFS Volume iOS 17.5 21F79 Simul... 17.0 GB    disk53s1
+
+/dev/disk54 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.3 GB     disk54
+   1:                 Apple_APFS Container disk55        9.3 GB     disk54s1
+
+/dev/disk55 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.3 GB     disk55
+                                 Physical Store disk54s1
+   1:                APFS Volume WatchOS 27.0 Simulator  8.9 GB     disk55s1
+
+/dev/disk56 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.1 GB     disk56
+   1:                 Apple_APFS Container disk57        9.1 GB     disk56s1
+
+/dev/disk57 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.1 GB     disk57
+                                 Physical Store disk56s1
+   1:                APFS Volume iOS 18.4 Simulator B... 8.8 GB     disk57s1
+
+/dev/disk58 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +20.7 GB    disk58
+   1:                 Apple_APFS Container disk59        20.7 GB    disk58s1
+
+/dev/disk59 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +20.7 GB    disk59
+                                 Physical Store disk58s1
+   1:                APFS Volume iOS 18.4 Simulator      20.1 GB    disk59s1
+
+/dev/disk60 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.7 GB     disk60
+   1:                 Apple_APFS Container disk61        8.7 GB     disk60s1
+
+/dev/disk61 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.7 GB     disk61
+                                 Physical Store disk60s1
+   1:                APFS Volume AppleTVOS 26.5 Simul... 8.4 GB     disk61s1
+
+/dev/disk62 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.7 GB     disk62
+   1:                 Apple_APFS Container disk63        8.7 GB     disk62s1
+
+/dev/disk63 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.7 GB     disk63
+                                 Physical Store disk62s1
+   1:                APFS Volume AppleTVOS 26.4 Simul... 8.4 GB     disk63s1
+
+/dev/disk64 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.8 GB     disk64
+   1:                 Apple_APFS Container disk65        8.8 GB     disk64s1
+
+/dev/disk65 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.8 GB     disk65
+                                 Physical Store disk64s1
+   1:                APFS Volume WatchOS 26.0 Simulator  8.5 GB     disk65s1
+
+/dev/disk66 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +18.3 GB    disk66
+   1:                 Apple_APFS Container disk67        18.3 GB    disk66s1
+
+/dev/disk67 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +18.3 GB    disk67
+                                 Physical Store disk66s1
+   1:                APFS Volume iOS 27.0 Simulator      17.8 GB    disk67s1
+
+/dev/disk68 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.2 GB     disk68
+   1:                 Apple_APFS Container disk69        9.2 GB     disk68s1
+
+/dev/disk69 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.2 GB     disk69
+                                 Physical Store disk68s1
+   1:                APFS Volume WatchOS 27.0 Simulator  8.9 GB     disk69s1
+
+/dev/disk70 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +4.9 GB     disk70
+   1:                 Apple_APFS Container disk71        4.9 GB     disk70s1
+
+/dev/disk71 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +4.9 GB     disk71
+                                 Physical Store disk70s1
+   1:                APFS Volume WatchOS 11.5 Simulat... 4.7 GB     disk71s1
+
+/dev/disk72 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +11.4 GB    disk72
+   1:                 Apple_APFS Container disk73        11.4 GB    disk72s1
+
+/dev/disk73 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +11.4 GB    disk73
+                                 Physical Store disk72s1
+   1:                APFS Volume WatchOS 11.5 Simulator  11.1 GB    disk73s1
+
+/dev/disk74 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.1 GB     disk74
+   1:                 Apple_APFS Container disk75        9.1 GB     disk74s1
+
+/dev/disk75 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.1 GB     disk75
+                                 Physical Store disk74s1
+   1:                APFS Volume WatchOS 26.5 Simulator  8.8 GB     disk75s1
+
+/dev/disk76 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +9.0 GB     disk76
+   1:                 Apple_APFS Container disk77        9.0 GB     disk76s1
+
+/dev/disk77 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +9.0 GB     disk77
+                                 Physical Store disk76s1
+   1:                APFS Volume iOS 18.2 Simulator B... 8.7 GB     disk77s1
+
+/dev/disk78 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +19.8 GB    disk78
+   1:                 Apple_APFS Container disk79        19.8 GB    disk78s1
+
+/dev/disk79 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +19.8 GB    disk79
+                                 Physical Store disk78s1
+   1:                APFS Volume iOS 18.2 Simulator      19.3 GB    disk79s1
+
+/dev/disk80 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.5 GB     disk80
+   1:                 Apple_APFS Container disk81        8.5 GB     disk80s1
+
+/dev/disk81 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.5 GB     disk81
+                                 Physical Store disk80s1
+   1:                APFS Volume AppleTVOS 26.2 Simul... 8.2 GB     disk81s1
+
+/dev/disk82 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +8.3 GB     disk82
+   1:                 Apple_APFS Container disk83        8.3 GB     disk82s1
+
+/dev/disk83 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +8.3 GB     disk83
+                                 Physical Store disk82s1
+   1:                APFS Volume AppleTVOS 26.0 Simul... 8.1 GB     disk83s1
+
+/dev/disk84 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +2.3 GB     disk84
+   1:                 Apple_APFS Container disk85        2.3 GB     disk84s1
+
+/dev/disk85 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +2.3 GB     disk85
+                                 Physical Store disk84s1
+   1:                APFS Volume MetalToolchainCryptex   2.2 GB     disk85s1
+
+/dev/disk86 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *1.0 TB     disk86
+   1:                        EFI EFI                     209.7 MB   disk86s1
+   2:                  Apple_HFS BD2                     999.9 GB   disk86s2
+
+=== thunderbolt ===
+Thunderbolt/USB4:
+
+    Thunderbolt/USB4 Bus 2:
+
+      Vendor Name: Apple Inc.
+      Device Name: MacBook Pro
+      UID: 0x05AC85CDC2975122
+      Route String: 0
+      Domain UUID: 89592189-8F38-49C0-90CB-E937EDE15C64
+      Port:
+          Status: No device connected
+          Link Status: 0x100
+          Speed: Up to 40 Gb/s
+          Receptacle: 3
+
+    Thunderbolt/USB4 Bus 1:
+
+      Vendor Name: Apple Inc.
+      Device Name: MacBook Pro
+      UID: 0x05AC85CDC2975121
+      Route String: 0
+      Domain UUID: 4796E15E-8EE3-4A85-B8B2-2CDB3CF2BCAF
+      Port:
+          Status: No device connected
+          Link Status: 0x100
+          Speed: Up to 40 Gb/s
+          Receptacle: 2
+
+    Thunderbolt/USB4 Bus 0:
+
+      Vendor Name: Apple Inc.
+      Device Name: MacBook Pro
+      UID: 0x05AC85CDC2975120
+      Route String: 0
+      Domain UUID: E7FE0546-8B39-4D3C-87DA-358D4FA19044
+      Port:
+          Status: No device connected
+          Link Status: 0x100
+          Speed: Up to 40 Gb/s
+          Receptacle: 1

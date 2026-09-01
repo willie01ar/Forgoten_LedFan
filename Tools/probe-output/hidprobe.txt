@@ -1,0 +1,1131 @@
+=== full USB device node ===
++-o USB Device@02100000  <class IOUSBHostDevice, id 0x10002b8e5, registered, matched, active, busy 0 (56 ms), retain 24>
+    {
+      "sessionID" = 1263673750152
+      "USBSpeed" = 2
+      "UsbLinkSpeed" = 1500000
+      "idProduct" = 30465
+      "iManufacturer" = 1
+      "bDeviceClass" = 0
+      "IOPowerManagement" = {"PowerOverrideOn"=Yes,"DevicePowerState"=2,"CurrentPowerState"=2,"CapabilityFlags"=32768,"MaxPowerState"=2,"DriverPowerState"=0}
+      "bcdDevice" = 1
+      "bMaxPacketSize0" = 8
+      "iProduct" = 2
+      "iSerialNumber" = 0
+      "bNumConfigurations" = 1
+      "UsbDeviceSignature" = <450c01770100000000030102>
+      "USB Product Name" = "USB Device"
+      "locationID" = 34603008
+      "bDeviceSubClass" = 0
+      "bcdUSB" = 512
+      "USB Address" = 1
+      "UsbDeviceFunction" = 0
+      "IOCFPlugInTypes" = {"9dc7b780-9ec0-11d4-a54f-000a27052861"="IOUSBHostFamily.kext/Contents/PlugIns/IOUSBLib.bundle"}
+      "kUSBCurrentConfiguration" = 1
+      "bDeviceProtocol" = 0
+      "USBPortType" = 5
+      "IOServiceDEXTEntitlements" = (("com.apple.developer.driverkit.transport.usb"))
+      "USB Vendor Name" = "SONiX"
+      "Device Speed" = 0
+      "idVendor" = 3141
+      "kUSBProductString" = "USB Device"
+      "kUSBAddress" = 1
+      "kUSBVendorString" = "SONiX"
+    }
+    
+
+
+=== interfaces (class 3 = HID, 10 = CDC data, 255 = vendor-specific) ===
++-o IOUSBHostInterface@0  <class IOUSBHostInterface, id 0x10002b8eb, registered, matched, active, busy 0 (46 ms), retain 11>
+  |   "bInterfaceProtocol" = 2
+  |   "bAlternateSetting" = 0
+  |   "bInterfaceClass" = 3
+  |   "bInterfaceSubClass" = 1
+  |   "bNumEndpoints" = 1
+  +-o AppleUserUSBHostHIDDevice  <class AppleUserHIDDevice, id 0x10002b8ed, registered, matched, active, busy 0 (22 ms), retain 13>
+    |   "IOMatchedPersonality" = {"IOClass"="AppleUserHIDDevice","CFBundleIdentifier"="com.apple.AppleUserHIDDrivers","IOProviderClass"="IOUSBHostInterface","IOUserServerCDHash"="eadd10d1f34105b8aebf3b027bdd7c0e8e9855c6","IOProbeScore"=1,"bInterfaceSubClass"=1,"IOUserServerName"="com.apple.driverkit.AppleUserHIDDrivers","HIDDefaultBehavior"="","kOSBundleDextUniqueIdentifier"=<b796d15d9354eae826f370c78da5a69a0107352f2c064353231d0efec890df26>,"CFBundleIdentifierKernel"="com.apple.iokit.IOHIDFamily","IOUserServerOneProcess"=Yes,"bInterfaceClass"=3,"IOUserClass"="AppleUserUSBHostHIDDevice"}
+    |   "bInterfaceSubClass" = 1
+    |   "bInterfaceClass" = 3
+    +-o IOHIDInterface  <class IOHIDInterface, id 0x10002b8f1, registered, matched, active, busy 0 (17 ms), retain 6>
+
+=== endpoints ===
+
+=== did it bind as HID? ===
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000be1, registered, matched, active, busy 0 (229 ms), retain 10>
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxInputReportSize" = 5
+  |   "VendorID" = 1452
+  |   "MaxFeatureReportSize" = 33
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "MaxOutputReportSize" = 1
+  |   "PrimaryUsage" = 11
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000be5, registered, matched, active, busy 0 (227 ms), retain 9>
+  | |   "Transport" = "SPI"
+  | |   "MaxInputReportSize" = 5
+  | |   "MaxOutputReportSize" = 1
+  | |   "VendorID" = 1452
+  | |   "PrimaryUsage" = 11
+  | |   "ProductID" = 835
+  | |   "PrimaryUsagePage" = 65280
+  | |   "MaxFeatureReportSize" = 33
+  | +-o AppleDeviceManagementHIDEventService  <class AppleDeviceManagementHIDEventService, id 0x100000beb, registered, matched, active, busy 0 (196 ms), retain 9>
+  |   |   "PrimaryUsagePage" = 65280
+  |   |   "VendorID" = 1452
+  |   |   "Transport" = "SPI"
+  |   |   "ProductID" = 835
+  |   |   "PrimaryUsage" = 11
+  |   +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f80, !registered, !matched, active, busy 0, retain 6>
+  +-o IOHIDLibUserClient  <class IOHIDLibUserClient, id 0x100000f81, !registered, !matched, active, busy 0, retain 6>
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000be7, registered, matched, active, busy 0 (230 ms), retain 8>
+  |   "PrimaryUsagePage" = 1
+  |   "MaxInputReportSize" = 10
+  |   "VendorID" = 1452
+  |   "MaxFeatureReportSize" = 1
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "MaxOutputReportSize" = 2
+  |   "PrimaryUsage" = 6
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000bea, registered, matched, active, busy 0 (226 ms), retain 9>
+    |   "Transport" = "SPI"
+    |   "MaxInputReportSize" = 10
+    |   "MaxOutputReportSize" = 2
+    |   "VendorID" = 1452
+    |   "PrimaryUsage" = 6
+    |   "ProductID" = 835
+    |   "PrimaryUsagePage" = 1
+    |   "MaxFeatureReportSize" = 1
+    +-o AppleHIDKeyboardEventDriverV2  <class AppleHIDKeyboardEventDriverV2, id 0x100000bf2, registered, matched, active, busy 0 (196 ms), retain 8>
+      |   "VendorID" = 1452
+      |   "PrimaryUsagePage" = 1
+      |   "ProductID" = 835
+      |   "PrimaryUsage" = 6
+      |   "Transport" = "SPI"
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f84, !registered, !matched, active, busy 0, retain 6>
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000bed, registered, matched, active, busy 0 (72684 ms), retain 8>
+  |   "PrimaryUsagePage" = 1
+  |   "MaxInputReportSize" = 1759
+  |   "VendorID" = 1452
+  |   "MaxFeatureReportSize" = 1
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "MaxOutputReportSize" = 1
+  |   "PrimaryUsage" = 2
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000bf0, registered, matched, active, busy 0 (72488 ms), retain 8>
+    |   "Transport" = "SPI"
+    |   "MaxInputReportSize" = 1759
+    |   "MaxOutputReportSize" = 1
+    |   "VendorID" = 1452
+    |   "PrimaryUsage" = 2
+    |   "ProductID" = 835
+    |   "PrimaryUsagePage" = 1
+    |   "MaxFeatureReportSize" = 1
+    +-o AppleMultitouchTrackpadHIDEventDriver  <class AppleMultitouchTrackpadHIDEventDriver, id 0x100000bf4, registered, matched, active, busy 0 (72302 ms), retain 9>
+      |   "PrimaryUsagePage" = 1
+      |   "VendorID" = 1452
+      |   "Transport" = "SPI"
+      |   "ProductID" = 835
+      |   "PrimaryUsage" = 2
+      +-o AppleMultitouchDevice  <class AppleMultitouchDevice, id 0x10002a1e2, registered, matched, active, busy 0 (1 ms), retain 8>
+        |   "VendorID" = 1452
+        |   "ProductID" = 835
+        |   "Transport" = "SPI"
+        +-o AppleMultitouchDeviceUserClient  <class AppleMultitouchDeviceUserClient, id 0x10002a1fc, !registered, !matched, active, busy 0, retain 6>
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000bf3, registered, matched, active, busy 0 (13455 ms), retain 8>
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxInputReportSize" = 16
+  |   "VendorID" = 1452
+  |   "MaxFeatureReportSize" = 1
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "MaxOutputReportSize" = 64
+  |   "PrimaryUsage" = 13
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000bf7, registered, matched, active, busy 0 (13452 ms), retain 7>
+    |   "Transport" = "SPI"
+    |   "MaxInputReportSize" = 16
+    |   "MaxOutputReportSize" = 64
+    |   "VendorID" = 1452
+    |   "PrimaryUsage" = 13
+    |   "ProductID" = 835
+    |   "PrimaryUsagePage" = 65280
+    |   "MaxFeatureReportSize" = 1
+    +-o AppleActuatorHIDEventDriver  <class AppleActuatorHIDEventDriver, id 0x100000bff, !registered, !matched, active, busy 0 (13447 ms), retain 6>
+      |   "VendorID" = 1452
+      |   "Transport" = "SPI"
+      +-o AppleActuatorDevice  <class AppleActuatorDevice, id 0x100000c00, registered, matched, active, busy 0 (13445 ms), retain 10>
+        |   "Transport" = "SPI"
+        +-o AppleActuatorDeviceUserClient  <class AppleActuatorDeviceUserClient, id 0x10002a1fd, !registered, !matched, active, busy 0, retain 6>
++-o AppleHIDTransportHIDDevice  <class AppleHIDTransportHIDDevice, id 0x100000bfa, registered, matched, active, busy 0 (3 ms), retain 8>
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxInputReportSize" = 108
+  |   "VendorID" = 1452
+  |   "MaxFeatureReportSize" = 1
+  |   "Transport" = "SPI"
+  |   "ProductID" = 835
+  |   "MaxOutputReportSize" = 1
+  |   "PrimaryUsage" = 3
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000bfd, registered, matched, active, busy 0 (2 ms), retain 6>
+        "Transport" = "SPI"
+        "MaxInputReportSize" = 108
+        "MaxOutputReportSize" = 1
+        "VendorID" = 1452
+        "PrimaryUsage" = 3
+        "ProductID" = 835
+        "PrimaryUsagePage" = 65280
+        "MaxFeatureReportSize" = 1
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b71, registered, matched, active, busy 0 (207 ms), retain 7>
+  |   "Transport" = "SPU"
+  |   "MaxInputReportSize" = 22
+  |   "MaxOutputReportSize" = 0
+  |   "VendorID" = 1452
+  |   "PrimaryUsage" = 3
+  |   "ProductID" = 33028
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b82, registered, matched, active, busy 0 (206 ms), retain 8>
+    |   "MaxOutputReportSize" = 0
+    |   "VendorID" = 1452
+    |   "PrimaryUsage" = 3
+    |   "ProductID" = 33028
+    |   "Transport" = "SPU"
+    |   "PrimaryUsagePage" = 65280
+    |   "MaxFeatureReportSize" = 0
+    |   "MaxInputReportSize" = 22
+    +-o AppleSPUHIDDriver  <class AppleSPUHIDDriver, id 0x100000b84, registered, matched, active, busy 0 (199 ms), retain 9>
+      |   "PrimaryUsagePage" = 65280
+      |   "VendorID" = 1452
+      |   "Transport" = "SPU"
+      |   "ProductID" = 33028
+      |   "PrimaryUsage" = 3
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f8c, !registered, !matched, active, busy 0, retain 6>
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b72, registered, matched, active, busy 0 (206 ms), retain 7>
+  |   "Transport" = "SPU"
+  |   "MaxInputReportSize" = 22
+  |   "MaxOutputReportSize" = 0
+  |   "VendorID" = 1452
+  |   "PrimaryUsage" = 9
+  |   "ProductID" = 33028
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b86, registered, matched, active, busy 0 (205 ms), retain 8>
+    |   "MaxOutputReportSize" = 0
+    |   "VendorID" = 1452
+    |   "PrimaryUsage" = 9
+    |   "ProductID" = 33028
+    |   "Transport" = "SPU"
+    |   "PrimaryUsagePage" = 65280
+    |   "MaxFeatureReportSize" = 0
+    |   "MaxInputReportSize" = 22
+    +-o AppleSPUHIDDriver  <class AppleSPUHIDDriver, id 0x100000b9c, registered, matched, active, busy 0 (199 ms), retain 9>
+      |   "PrimaryUsagePage" = 65280
+      |   "VendorID" = 1452
+      |   "Transport" = "SPU"
+      |   "ProductID" = 33028
+      |   "PrimaryUsage" = 9
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f8b, !registered, !matched, active, busy 0, retain 6>
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b77, registered, matched, active, busy 0 (215 ms), retain 7>
+  |   "Transport" = "SPU"
+  |   "MaxInputReportSize" = 122
+  |   "MaxOutputReportSize" = 0
+  |   "PrimaryUsage" = 4
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b93, registered, matched, active, busy 0 (213 ms), retain 8>
+    |   "MaxOutputReportSize" = 0
+    |   "PrimaryUsage" = 4
+    |   "Transport" = "SPU"
+    |   "PrimaryUsagePage" = 65280
+    |   "MaxFeatureReportSize" = 0
+    |   "MaxInputReportSize" = 122
+    +-o AppleSPUVD6286  <class AppleSPUVD6286, id 0x100000bb1, registered, matched, active, busy 0 (196 ms), retain 9>
+      |   "VendorID" = 0
+      |   "PrimaryUsagePage" = 65280
+      |   "ProductID" = 0
+      |   "PrimaryUsage" = 4
+      |   "Transport" = "SPU"
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f87, !registered, !matched, active, busy 0, retain 6>
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b74, registered, matched, active, busy 0 (194 ms), retain 9>
+  |   "PrimaryUsagePage" = 32
+  |   "MaxInputReportSize" = 8
+  |   "VendorID" = 1452
+  |   "MaxFeatureReportSize" = 1
+  |   "Transport" = "SPU"
+  |   "ProductID" = 33028
+  |   "MaxOutputReportSize" = 2
+  |   "PrimaryUsage" = 138
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b9b, registered, matched, active, busy 0 (191 ms), retain 8>
+  | |   "MaxOutputReportSize" = 2
+  | |   "VendorID" = 1452
+  | |   "PrimaryUsage" = 138
+  | |   "ProductID" = 33028
+  | |   "Transport" = "SPU"
+  | |   "PrimaryUsagePage" = 32
+  | |   "MaxFeatureReportSize" = 1
+  | |   "MaxInputReportSize" = 8
+  | +-o AppleSPUHIDDriver  <class AppleSPUHIDDriver, id 0x100000ba8, registered, matched, active, busy 0 (175 ms), retain 9>
+  |   |   "PrimaryUsagePage" = 32
+  |   |   "VendorID" = 1452
+  |   |   "Transport" = "SPU"
+  |   |   "ProductID" = 33028
+  |   |   "PrimaryUsage" = 138
+  |   +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f88, !registered, !matched, active, busy 0, retain 6>
+  +-o IOHIDLibUserClient  <class IOHIDLibUserClient, id 0x100003e9d, !registered, !matched, active, busy 0, retain 6>
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b73, registered, matched, active, busy 0 (188 ms), retain 8>
+  |   "Transport" = "SPU"
+  |   "MaxInputReportSize" = 1
+  |   "MaxOutputReportSize" = 0
+  |   "PrimaryUsage" = 255
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b94, registered, matched, active, busy 0 (186 ms), retain 8>
+  | |   "MaxOutputReportSize" = 0
+  | |   "PrimaryUsage" = 255
+  | |   "Transport" = "SPU"
+  | |   "PrimaryUsagePage" = 65280
+  | |   "MaxFeatureReportSize" = 0
+  | |   "MaxInputReportSize" = 1
+  | +-o AppleSPUHIDDriver  <class AppleSPUHIDDriver, id 0x100000ba4, registered, matched, active, busy 0 (175 ms), retain 10>
+  |   |   "PrimaryUsagePage" = 65280
+  |   |   "VendorID" = 0
+  |   |   "Transport" = "SPU"
+  |   |   "ProductID" = 0
+  |   |   "PrimaryUsage" = 255
+  |   +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f8a, !registered, !matched, active, busy 0, retain 6>
+  |   +-o AppleSPUHIDDriverUserClient  <class AppleSPUHIDDriverUserClient, id 0x100001054, !registered, !matched, active, busy 0, retain 5>
+  +-o AppleSPUHIDDeviceUserClient  <class AppleSPUHIDDeviceUserClient, id 0x100001055, !registered, !matched, active, busy 0, retain 6>
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b70, registered, matched, active, busy 0 (180 ms), retain 7>
+  |   "Transport" = "SPU"
+  |   "MaxInputReportSize" = 100
+  |   "MaxOutputReportSize" = 0
+  |   "PrimaryUsage" = 5
+  |   "PrimaryUsagePage" = 65292
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b81, registered, matched, active, busy 0 (180 ms), retain 8>
+    |   "MaxOutputReportSize" = 0
+    |   "PrimaryUsage" = 5
+    |   "Transport" = "SPU"
+    |   "PrimaryUsagePage" = 65292
+    |   "MaxFeatureReportSize" = 0
+    |   "MaxInputReportSize" = 100
+    +-o AppleSPUHIDDriver  <class AppleSPUHIDDriver, id 0x100000b83, registered, matched, active, busy 0 (173 ms), retain 9>
+      |   "Transport" = "SPU"
+      |   "VendorID" = 0
+      |   "PrimaryUsage" = 5
+      |   "ProductID" = 0
+      |   "PrimaryUsagePage" = 65292
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f8d, !registered, !matched, active, busy 0, retain 6>
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b76, registered, matched, active, busy 0 (213 ms), retain 7>
+  |   "Transport" = "SPU"
+  |   "MaxInputReportSize" = 5
+  |   "MaxOutputReportSize" = 0
+  |   "PrimaryUsage" = 1
+  |   "PrimaryUsagePage" = 65292
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b92, registered, matched, active, busy 0 (213 ms), retain 8>
+    |   "MaxOutputReportSize" = 0
+    |   "PrimaryUsage" = 1
+    |   "Transport" = "SPU"
+    |   "PrimaryUsagePage" = 65292
+    |   "MaxFeatureReportSize" = 0
+    |   "MaxInputReportSize" = 5
+    +-o AppleSPUHIDDriver  <class AppleSPUHIDDriver, id 0x100000ba9, registered, matched, active, busy 0 (196 ms), retain 10>
+      |   "PrimaryUsagePage" = 65292
+      |   "VendorID" = 0
+      |   "Transport" = "SPU"
+      |   "ProductID" = 0
+      |   "PrimaryUsage" = 1
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f86, !registered, !matched, active, busy 0, retain 6>
+      +-o AppleSPUHIDDriverUserClient  <class AppleSPUHIDDriverUserClient, id 0x100001059, !registered, !matched, active, busy 0, retain 5>
++-o AppleSPUHIDDevice  <class AppleSPUHIDDevice, id 0x100000b7d, registered, matched, active, busy 0 (210 ms), retain 7>
+  |   "Transport" = "SPU"
+  |   "MaxInputReportSize" = 14
+  |   "MaxOutputReportSize" = 0
+  |   "VendorID" = 1452
+  |   "PrimaryUsage" = 5
+  |   "ProductID" = 33028
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000b96, registered, matched, active, busy 0 (208 ms), retain 8>
+    |   "MaxOutputReportSize" = 0
+    |   "VendorID" = 1452
+    |   "PrimaryUsage" = 5
+    |   "ProductID" = 33028
+    |   "Transport" = "SPU"
+    |   "PrimaryUsagePage" = 65280
+    |   "MaxFeatureReportSize" = 0
+    |   "MaxInputReportSize" = 14
+    +-o AppleSPUHIDDriver  <class AppleSPUHIDDriver, id 0x100000ba7, registered, matched, active, busy 0 (197 ms), retain 9>
+      |   "PrimaryUsagePage" = 65280
+      |   "VendorID" = 1452
+      |   "Transport" = "SPU"
+      |   "ProductID" = 33028
+      |   "PrimaryUsage" = 5
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100000f89, !registered, !matched, active, busy 0, retain 6>
++-o AppleCS42L84Mikey  <class AppleCS42L84Mikey, id 0x1000007bc, registered, matched, active, busy 0 (418 ms), retain 9>
+  |   "Transport" = "Audio"
+  |   "MaxInputReportSize" = 1
+  |   "MaxOutputReportSize" = 0
+  |   "PrimaryUsage" = 1
+  |   "PrimaryUsagePage" = 12
+  |   "MaxFeatureReportSize" = 0
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x1000007cc, registered, matched, active, busy 0 (410 ms), retain 10>
+    |   "MaxOutputReportSize" = 0
+    |   "PrimaryUsage" = 1
+    |   "Transport" = "Audio"
+    |   "PrimaryUsagePage" = 12
+    |   "MaxFeatureReportSize" = 0
+    |   "MaxInputReportSize" = 1
+    +-o AppleUserHIDEventDriver  <class AppleUserHIDEventService, id 0x10000112a, registered, matched, active, busy 0 (0 ms), retain 16>
+      |   "PrimaryUsagePage" = 12
+      |   "VendorID" = 0
+      |   "Transport" = "Audio"
+      |   "ProductID" = 0
+      |   "PrimaryUsage" = 1
+      +-o IOHIDEventServiceUserClient  <class IOHIDEventServiceUserClient, id 0x100001142, !registered, !matched, active, busy 0, retain 6>
++-o AppleUserUSBHostHIDDevice  <class AppleUserHIDDevice, id 0x10002b8ed, registered, matched, active, busy 0 (22 ms), retain 13>
+  |   "PrimaryUsagePage" = 65535
+  |   "MaxInputReportSize" = 8
+  |   "VendorID" = 3141
+  |   "MaxFeatureReportSize" = 8
+  |   "Transport" = "USB"
+  |   "ProductID" = 30465
+  |   "MaxOutputReportSize" = 8
+  |   "PrimaryUsage" = 1
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x10002b8f1, registered, matched, active, busy 0 (17 ms), retain 6>
+        "Transport" = "USB"
+        "MaxInputReportSize" = 8
+        "MaxOutputReportSize" = 8
+        "VendorID" = 3141
+        "PrimaryUsage" = 1
+        "ProductID" = 30465
+        "PrimaryUsagePage" = 65535
+        "MaxFeatureReportSize" = 8
++-o AppleBTM  <class AppleBTM, id 0x100000a49, registered, matched, active, busy 0 (5 ms), retain 10>
+  |   "Transport" = "SPMI"
+  |   "MaxInputReportSize" = 2004
+  |   "MaxOutputReportSize" = 1
+  |   "PrimaryUsage" = 72
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxFeatureReportSize" = 132
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x100000a4b, registered, matched, active, busy 0 (5 ms), retain 6>
+        "MaxOutputReportSize" = 1
+        "PrimaryUsage" = 72
+        "Transport" = "SPMI"
+        "PrimaryUsagePage" = 65280
+        "MaxFeatureReportSize" = 132
+        "MaxInputReportSize" = 2004
++-o IOHIDUserDevice  <class IOHIDUserDevice, id 0x100001039, registered, matched, active, busy 0 (3 ms), retain 10>
+  |   "Transport" = "USB"
+  |   "MaxInputReportSize" = 1
+  |   "MaxOutputReportSize" = 1
+  |   "VendorID" = 1452
+  |   "PrimaryUsage" = 15
+  |   "ProductID" = 835
+  |   "PrimaryUsagePage" = 65280
+  |   "MaxFeatureReportSize" = 9
+  +-o IOHIDInterface  <class IOHIDInterface, id 0x10000103b, registered, matched, active, busy 0 (2 ms), retain 6>
+  |     "MaxOutputReportSize" = 1
+  |     "VendorID" = 1452
+  |     "PrimaryUsage" = 15
+  |     "ProductID" = 835
+  |     "Transport" = "USB"
+  |     "PrimaryUsagePage" = 65280
+  |     "MaxFeatureReportSize" = 9
+  |     "MaxInputReportSize" = 1
+  +-o IOHIDLibUserClient  <class IOHIDLibUserClient, id 0x100001072, !registered, !matched, active, busy 0, retain 6>
+
+=== HID report descriptor (raw bytes) ===
+    "ReportDescriptor" => {length = 65, bytes = 0x0600ff090ba1010600ff090b150026ff ... 080085bbb20100c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPI"
+    "VendorID" => 1452
+    "VersionNumber" => 850
+  }
+  1 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleHIDTransport"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleHIDTransport"
+    "CountryCode" => 33
+    "DeviceOpenedByEventSystem" => true
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 6
+        "DeviceUsagePage" => 1
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "ElementCookie" => 6
+            "Flags" => 134217730
+            "HasNullState" => false
+            "HasPreferredState" => true
+            "IsArray" => false
+            "IsNonLinear" => false
+            "IsRelative" => false
+            "IsWrapping" => false
+            "Max" => 1
+            "Min" => 0
+            "ReportCount" => 1
+            "ReportID" => 1
+            "ReportSize" => 1
+            "ScaledMax" => 1
+            "ScaledMin" => 0
+            "Size" => 1
+            "Type" => 2
+--
+    "ReportDescriptor" => {length = 90, bytes = 0x05010906a1018501050719e029e71500 ... 03750795018102c0}
+    "ReportInterval" => 8000
+    "RequiresTCCAuthorization" => true
+    "Transport" => "SPI"
+    "VendorID" => 1452
+    "VersionNumber" => 850
+  }
+  2 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleHIDTransport"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleHIDTransport"
+    "CountryCode" => 0
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 2
+        "DeviceUsagePage" => 1
+      }
+      1 => {
+        "DeviceUsage" => 1
+        "DeviceUsagePage" => 1
+      }
+      2 => {
+        "DeviceUsage" => 37
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "CollectionType" => 0
+            "ElementCookie" => 2
+            "Elements" => [
+              0 => {
+                "CollectionType" => 1
+                "ElementCookie" => 3
+                "Elements" => [
+                  0 => {
+                    "ElementCookie" => 13
+--
+    "ReportDescriptor" => {length = 78, bytes = 0x05010902a1010901a100050919012903 ... 96d7068122c0c0c0}
+    "ReportInterval" => 8000
+    "RequiresTCCAuthorization" => true
+    "Transport" => "SPI"
+    "VendorID" => 1452
+    "VersionNumber" => 850
+  }
+  3 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleHIDTransport"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleHIDTransport"
+    "CountryCode" => 0
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 13
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "ElementCookie" => 8
+            "Flags" => 2
+            "HasNullState" => false
+            "HasPreferredState" => true
+            "IsArray" => false
+            "IsNonLinear" => false
+            "IsRelative" => false
+            "IsWrapping" => false
+            "Max" => 255
+            "Min" => 0
+            "ReportCount" => 1
+            "ReportID" => 63
+            "ReportSize" => 120
+            "ScaledMax" => 255
+            "ScaledMin" => 0
+            "Size" => 120
+            "Type" => 1
+--
+    "ReportDescriptor" => {length = 36, bytes = 0x0600ff090da1010600ff090d150026ff ... 8553963f009102c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPI"
+    "VendorID" => 1452
+    "VersionNumber" => 850
+  }
+  4 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleHIDTransport"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleHIDTransport"
+    "CountryCode" => 0
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 3
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "ElementCookie" => 6
+            "Flags" => 2
+            "HasNullState" => false
+            "HasPreferredState" => true
+            "IsArray" => false
+            "IsNonLinear" => false
+            "IsRelative" => false
+            "IsWrapping" => false
+            "Max" => 255
+            "Min" => 0
+            "ReportCount" => 1
+            "ReportID" => 192
+            "ReportSize" => 856
+            "ScaledMax" => 255
+            "ScaledMin" => 0
+            "Size" => 856
+            "Type" => 1
+            "Unit" => 0
+--
+    "ReportDescriptor" => {length = 27, bytes = 0x0600ff0903a1010600ff0903150026ff ... 966b0075088102c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPI"
+    "VendorID" => 1452
+    "VersionNumber" => 850
+  }
+  5 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 3
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "ReportID" => 0
+        "Type" => 513
+        "Usage" => 3
+        "UsagePage" => 65280
+        "VariableSize" => 0
+      }
+      1 => {
+        "ElementCookie" => 3
+        "Flags" => 0
+        "HasNullState" => false
+        "HasPreferredState" => true
+        "IsArray" => true
+        "IsNonLinear" => false
+        "IsRelative" => false
+        "IsWrapping" => false
+        "Max" => 0
+        "Min" => 0
+        "ReportCount" => 1
+        "ReportID" => 0
+        "ReportSize" => 0
+--
+    "ReportDescriptor" => {length = 20, bytes = 0x0600ff0a0300a101150026ff00750895168102c0}
+    "ReportInterval" => 8000
+    "SerialNumber" => "000000000000b205af62b221"
+    "Transport" => "SPU"
+    "VendorID" => 1452
+  }
+  6 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 9
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "ReportID" => 0
+        "Type" => 513
+        "Usage" => 9
+        "UsagePage" => 65280
+        "VariableSize" => 0
+      }
+      1 => {
+        "ElementCookie" => 3
+        "Flags" => 0
+        "HasNullState" => false
+        "HasPreferredState" => true
+        "IsArray" => true
+        "IsNonLinear" => false
+        "IsRelative" => false
+        "IsWrapping" => false
+        "Max" => 0
+        "Min" => 0
+        "ReportCount" => 1
+        "ReportID" => 0
+        "ReportSize" => 0
+--
+    "ReportDescriptor" => {length = 20, bytes = 0x0600ff0a0900a101150026ff00750895168102c0}
+    "ReportInterval" => 8000
+    "SerialNumber" => "000000000000b205af62b221"
+    "Transport" => "SPU"
+    "VendorID" => 1452
+  }
+  7 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 4
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "ReportID" => 0
+        "Type" => 513
+        "Usage" => 4
+        "UsagePage" => 65280
+        "VariableSize" => 0
+      }
+      1 => {
+        "ElementCookie" => 3
+        "Flags" => 0
+        "HasNullState" => false
+        "HasPreferredState" => true
+        "IsArray" => true
+        "IsNonLinear" => false
+        "IsRelative" => false
+        "IsWrapping" => false
+        "Max" => 0
+        "Min" => 0
+        "ReportCount" => 1
+        "ReportID" => 0
+        "ReportSize" => 0
+--
+    "ReportDescriptor" => {length = 20, bytes = 0x0600ff0a0400a101150026ff007508957a8100c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPU"
+  }
+  8 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 138
+        "DeviceUsagePage" => 32
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "ElementCookie" => 20
+            "Flags" => 2
+            "HasNullState" => false
+            "HasPreferredState" => true
+            "IsArray" => false
+            "IsNonLinear" => false
+            "IsRelative" => false
+            "IsWrapping" => false
+            "Max" => 360
+            "Min" => 0
+            "ReportCount" => 1
+            "ReportID" => 1
+            "ReportSize" => 9
+            "ScaledMax" => 360
+            "ScaledMin" => 0
+            "Size" => 9
+            "Type" => 1
+            "Unit" => 0
+            "UnitExponent" => 0
+            "Usage" => 1151
+--
+    "ReportDescriptor" => {length = 179, bytes = 0x0520098aa10185010a7f044668013426 ... 14750895018102c0}
+    "ReportInterval" => 8000
+    "SerialNumber" => ""
+    "Transport" => "SPU"
+    "VendorID" => 1452
+  }
+  9 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 255
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "ReportID" => 0
+        "Type" => 513
+        "Usage" => 255
+        "UsagePage" => 65280
+        "VariableSize" => 0
+      }
+      1 => {
+        "ElementCookie" => 3
+        "Flags" => 0
+        "HasNullState" => false
+        "HasPreferredState" => true
+        "IsArray" => true
+        "IsNonLinear" => false
+        "IsRelative" => false
+        "IsWrapping" => false
+        "Max" => 0
+        "Min" => 0
+        "ReportCount" => 1
+        "ReportID" => 0
+        "ReportSize" => 0
+--
+    "ReportDescriptor" => {length = 20, bytes = 0x0600ff0aff00a101150026ff00750895018102c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPU"
+  }
+  10 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 5
+        "DeviceUsagePage" => 65292
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "ReportID" => 0
+        "Type" => 513
+        "Usage" => 5
+        "UsagePage" => 65292
+        "VariableSize" => 0
+      }
+      1 => {
+        "ElementCookie" => 3
+        "Flags" => 0
+        "HasNullState" => false
+        "HasPreferredState" => true
+        "IsArray" => true
+        "IsNonLinear" => false
+        "IsRelative" => false
+        "IsWrapping" => false
+        "Max" => 0
+        "Min" => 0
+        "ReportCount" => 1
+        "ReportID" => 0
+        "ReportSize" => 0
+        "ScaledMax" => 0
+        "ScaledMin" => 0
+--
+    "ReportDescriptor" => {length = 21, bytes = 0x060cff0905a1018500150026ff00750895648102c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPU"
+  }
+  11 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 1
+        "DeviceUsagePage" => 65292
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "ReportID" => 0
+        "Type" => 513
+        "Usage" => 1
+        "UsagePage" => 65292
+        "VariableSize" => 0
+      }
+      1 => {
+        "ElementCookie" => 3
+        "Flags" => 0
+        "HasNullState" => false
+        "HasPreferredState" => true
+        "IsArray" => true
+        "IsNonLinear" => false
+        "IsRelative" => false
+        "IsWrapping" => false
+        "Max" => 0
+        "Min" => 0
+        "ReportCount" => 1
+        "ReportID" => 0
+        "ReportSize" => 0
+        "ScaledMax" => 0
+        "ScaledMin" => 0
+--
+    "ReportDescriptor" => {length = 21, bytes = 0x060cff0901a1018500150026ff00750895058102c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPU"
+  }
+  12 => {
+    "Built-In" => true
+    "CFBundleIdentifier" => "com.apple.driver.AppleSPU"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleSPU"
+    "DeviceOpenedByEventSystem" => false
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 5
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "ReportID" => 0
+        "Type" => 513
+        "Usage" => 5
+        "UsagePage" => 65280
+        "VariableSize" => 0
+      }
+      1 => {
+        "ElementCookie" => 3
+        "Flags" => 0
+        "HasNullState" => false
+        "HasPreferredState" => true
+        "IsArray" => true
+        "IsNonLinear" => false
+        "IsRelative" => false
+        "IsWrapping" => false
+        "Max" => 0
+        "Min" => 0
+        "ReportCount" => 1
+        "ReportID" => 0
+        "ReportSize" => 0
+        "ScaledMax" => 0
+        "ScaledMin" => 0
+--
+    "ReportDescriptor" => {length = 20, bytes = 0x0600ff0a0500a101150026ff007508950e8102c0}
+    "ReportInterval" => 8000
+    "SerialNumber" => ""
+    "Transport" => "SPU"
+    "VendorID" => 1452
+  }
+  13 => {
+    "AppleVendorSupported" => true
+    "DeviceOpenedByEventSystem" => true
+    "DeviceTypeHint" => "Headset"
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 1
+        "DeviceUsagePage" => 12
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "ElementCookie" => 4
+            "Flags" => 2
+            "HasNullState" => false
+            "HasPreferredState" => true
+            "IsArray" => false
+            "IsNonLinear" => false
+            "IsRelative" => false
+            "IsWrapping" => false
+            "Max" => 1
+            "Min" => 0
+            "ReportCount" => 1
+            "ReportID" => 0
+            "ReportSize" => 1
+            "ScaledMax" => 1
+            "ScaledMin" => 0
+            "Size" => 1
+            "Type" => 2
+            "Unit" => 0
+            "UnitExponent" => 0
+--
+    "ReportDescriptor" => {length = 29, bytes = 0x050c0901a101050c09cd09ea09e91500 ... 01810295058105c0}
+    "ReportInterval" => 8000
+    "Transport" => "Audio"
+  }
+  14 => {
+    "bInterfaceClass" => 3
+    "bInterfaceSubClass" => 1
+    "BootProtocol" => 2
+    "CFBundleIdentifier" => "com.apple.AppleUserHIDDrivers"
+    "CFBundleIdentifierKernel" => "com.apple.iokit.IOHIDFamily"
+    "CountryCode" => 0
+    "DebugState" => {
+    }
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 1
+        "DeviceUsagePage" => 65535
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "ElementCookie" => 4
+            "Flags" => 2
+            "HasNullState" => false
+            "HasPreferredState" => true
+            "IsArray" => false
+            "IsNonLinear" => false
+            "IsRelative" => false
+            "IsWrapping" => false
+            "Max" => 255
+            "Min" => 0
+            "ReportCount" => 1
+            "ReportID" => 0
+            "ReportSize" => 64
+            "ScaledMax" => 255
+            "ScaledMin" => 0
+            "Size" => 64
+--
+    "ReportDescriptor" => {length = 41, bytes = 0x06ffff0901a1010901150026ff007508 ... 7f75089508b102c0}
+    "ReportInterval" => 8000
+    "RequestTimeout" => 5000000
+    "Transport" => "USB"
+    "VendorID" => 3141
+    "VersionNumber" => 1
+  }
+  15 => {
+    "CFBundleIdentifier" => "com.apple.driver.AppleBTM"
+    "CFBundleIdentifierKernel" => "com.apple.driver.AppleBTM"
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 72
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "CollectionType" => 3
+            "ElementCookie" => 2
+            "Elements" => [
+              0 => {
+                "ElementCookie" => 9
+                "Flags" => 34
+                "HasNullState" => false
+                "HasPreferredState" => false
+                "IsArray" => false
+                "IsNonLinear" => false
+                "IsRelative" => false
+                "IsWrapping" => false
+                "Max" => 0
+                "Min" => 0
+                "ReportCount" => 1
+                "ReportID" => 2
+                "ReportSize" => 16024
+                "ScaledMax" => 0
+                "ScaledMin" => 0
+--
+    "ReportDescriptor" => {length = 50, bytes = 0x0600ff0a4800a1010629ff8501257f95 ... 04761804b102c0c0}
+    "ReportInterval" => 8000
+    "Transport" => "SPMI"
+  }
+  16 => {
+    "Built-In" => true
+    "DeviceUsagePairs" => [
+      0 => {
+        "DeviceUsage" => 15
+        "DeviceUsagePage" => 65280
+      }
+    ]
+    "Elements" => [
+      0 => {
+        "CollectionType" => 1
+        "ElementCookie" => 1
+        "Elements" => [
+          0 => {
+            "ElementCookie" => 8
+            "Flags" => 66
+            "HasNullState" => true
+            "HasPreferredState" => true
+            "IsArray" => false
+            "IsNonLinear" => false
+            "IsRelative" => false
+            "IsWrapping" => false
+            "Max" => 14660
+            "Min" => 100
+            "ReportCount" => 1
+            "ReportID" => 1
+            "ReportSize" => 32
+            "ScaledMax" => 14660
+            "ScaledMin" => 100
+            "Size" => 32
+            "Type" => 257
+            "Unit" => 16777441
+            "UnitExponent" => 13
+            "Usage" => 1
+            "UsagePage" => 65392
+            "VariableSize" => 0
+          }
+--
+    "ReportDescriptor" => {length = 89, bytes = 0x0600ff0a0f00a101850167e100000155 ... 0075209501b142c0}
+    "ReportInterval" => 8000
+    "Transport" => "USB"
+    "VendorID" => 1452
+  }
+]
+
+=== serial device nodes ===
+crw-rw-rw-  1 root  wheel  0x9000003 Aug 29 14:51 /dev/cu.Bluetooth-Incoming-Port
+crw-rw-rw-  1 root  wheel  0x9000001 Aug 29 14:48 /dev/cu.debug-console
+
+=== which driver claimed it ===
++-o USB Device@02100000  <class IOUSBHostDevice, id 0x10002b8e5, registered, matched, active, busy 0 (56 ms), retain 24>
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x10002b8e9, !registered, !matched, active, busy 0, retain 4>
+  |     "CFBundleIdentifier" = "com.apple.driver.usb.AppleUSBHostCompositeDevice"
+  |     "IOClass" = "AppleUSBHostCompositeDevice"
+  +-o IOUSBHostInterface@0  <class IOUSBHostInterface, id 0x10002b8eb, registered, matched, active, busy 0 (46 ms), retain 11>
+    +-o AppleUserUSBHostHIDDevice  <class AppleUserHIDDevice, id 0x10002b8ed, registered, matched, active, busy 0 (22 ms), retain 13>
+      |   "IOMatchedPersonality" = {"IOClass"="AppleUserHIDDevice","CFBundleIdentifier"="com.apple.AppleUserHIDDrivers","IOProviderClass"="IOUSBHostInterface","IOUserServerCDHash"="eadd10d1f34105b8aebf3b027bdd7c0e8e9855c6","IOProbeScore"=1,"bInterfaceSubClass"=1,"IOUserServerName"="com.apple.driverkit.AppleUserHIDDrivers","HIDDefaultBehavior"="","kOSBundleDextUniqueIdentifier"=<b796d15d9354eae826f370c78da5a69a0107352f2c064353231d0efec890df26>,"CFBundleIdentifierKernel"="com.apple.iokit.IOHIDFamily","IOUserServerOneProcess"=Yes,"bInterfaceClass"=3,"IOUserClass"="AppleUserUSBHostHIDDevice"}
+      |   "CFBundleIdentifier" = "com.apple.AppleUserHIDDrivers"
+      |   "IOClass" = "AppleUserHIDDevice"
+      +-o IOHIDInterface  <class IOHIDInterface, id 0x10002b8f1, registered, matched, active, busy 0 (17 ms), retain 6>
