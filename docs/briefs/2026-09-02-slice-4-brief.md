@@ -33,9 +33,9 @@ Commit slice 2 and slice 3 as two separate commits, in that order, with messages
 what each established. Do this before touching anything else.
 
 **Acceptance**
-- [ ] `git status --porcelain` is empty.
-- [ ] Slice 2 and slice 3 are distinguishable in `git log`.
-- [ ] Nothing in `Tools/probe-output/` was dropped — those are primary evidence.
+- [x] `git status --porcelain` is empty.
+- [ ] Slice 2 and slice 3 are distinguishable in `git log`. (Not done: they were already committed together as `7be831d` before the slice; see the report.)
+- [x] Nothing in `Tools/probe-output/` was dropped — those are primary evidence.
 
 ---
 
@@ -52,13 +52,13 @@ Per D5, these are **preview-only** concerns now. `columnsPerRevolution` is whate
 the preview legible; it makes no claim about hardware. Start at 180 and tune by eye.
 
 **Acceptance**
-- [ ] A 26-character message renders as recognisable text in the preview.
-- [ ] A short message does not spread across the whole circle — it occupies a proportional
+- [x] A 26-character message renders as recognisable text in the preview.
+- [x] A short message does not spread across the whole circle — it occupies a proportional
       arc, with the remainder dark.
-- [ ] `columnOffset` shifts the message around the disc. Prove it in a test; do not wire a
+- [x] `columnOffset` shifts the message around the disc. Prove it in a test; do not wire a
       scroll animation yet.
-- [ ] Rasterizer stays pure and free of geometry.
-- [ ] Screenshot evidence, both appearances, in `docs/reports/images/`.
+- [x] Rasterizer stays pure and free of geometry.
+- [x] Screenshot evidence, both appearances, in `docs/reports/images/`.
 
 The last box is the real one. Ticking the others without a legible screenshot is not done.
 
@@ -70,11 +70,11 @@ The last box is the real one. Ticking the others without a legible screenshot is
 `FanDisplayTransport.store(_:)` replaces `display(_:)`. `geometry` replaces `ledsPerArm`.
 
 **Acceptance**
-- [ ] Slot picker, 1–8, in the controls card.
-- [ ] Live character counter against the 26-character limit.
-- [ ] Over-length input is visibly truncated or refused — never silently cut.
-- [ ] Validation lives in the domain type, not the view.
-- [ ] Editing per-slot text is retained in memory while the app runs; persistence is not in
+- [x] Slot picker, 1–8, in the controls card.
+- [x] Live character counter against the 26-character limit.
+- [x] Over-length input is visibly truncated or refused — never silently cut.
+- [x] Validation lives in the domain type, not the view.
+- [x] Editing per-slot text is retained in memory while the app runs; persistence is not in
       scope.
 
 ---
@@ -86,11 +86,11 @@ The last box is the real one. Ticking the others without a legible screenshot is
 `.protocolNotYetKnown`.
 
 **Acceptance**
-- [ ] `EEPROMWriting` unit tested: packet size always 8, address increments by the payload
+- [x] `EEPROMWriting` unit tested: packet size always 8, address increments by the payload
       length, final chunk padded, a 26-character payload produces the expected packet count.
-- [ ] The 0x18–0x23 address range is annotated in code as where the firmware stalls — two or
+- [x] The 0x18–0x23 address range is annotated in code as where the firmware stalls — two or
       three lines, per the comment budget.
-- [ ] `MessageTableSerializing` has exactly one conformance, which throws, and it is the only
+- [x] `MessageTableSerializing` has exactly one conformance, which throws, and it is the only
       place in the app that admits the protocol is unknown.
 
 ---
@@ -101,12 +101,12 @@ The app must never write to the head. `HIDFanTransport.store(_:)` throws
 `.protocolNotYetKnown`.
 
 **Acceptance**
-- [ ] Selecting the hardware transport connects and reports the device, and the UI states
+- [x] Selecting the hardware transport connects and reports the device, and the UI states
       plainly that the fan's message format is not yet known, so messages cannot be sent to
       it yet.
-- [ ] Send is disabled — not enabled-then-failing — when the hardware transport is selected.
-- [ ] The copy does not imply a fault in the user's setup. This is our gap, not their cable.
-- [ ] No code path in the app target can emit a packet to the device.
+- [x] Send is disabled — not enabled-then-failing — when the hardware transport is selected.
+- [x] The copy does not imply a fault in the user's setup. This is our gap, not their cable.
+- [x] No code path in the app target can emit a packet to the device.
 
 ---
 
@@ -115,13 +115,13 @@ The app must never write to the head. `HIDFanTransport.store(_:)` throws
 Slice 3 found three places where the docs were wrong. Fix them at the source, not only in
 the report.
 
-- [ ] `protocol-discovery.md` describes the interrupt-IN endpoint and feature report as
+- [x] `protocol-discovery.md` describes the interrupt-IN endpoint and feature report as
       feedback channels. On this head neither carries anything. Say so.
-- [ ] The docs assume live observation. There is none; the oracle is a cable swap. Say so
+- [x] The docs assume live observation. There is none; the oracle is a cable swap. Say so
       wherever a method implies watching while sending.
-- [ ] `hardware.md`'s bricking guardrail warned about the wrong failure. The risk that
+- [x] `hardware.md`'s bricking guardrail warned about the wrong failure. The risk that
       materialised was an erased EEPROM, not a dead MCU. Rewrite it.
-- [ ] `testing.md`: add that no automated test may write to the head.
+- [x] `testing.md`: add that no automated test may write to the head.
 
 ---
 

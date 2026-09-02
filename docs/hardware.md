@@ -55,9 +55,11 @@ mutually exclusive phases:
 2. **Display:** data cable out, power cable in, head spins and paints the stored program.
 
 Consequences: nothing sent over USB can be observed live; every protocol experiment is
-"upload, swap cables, look". `FanDisplayTransport.display(_:)` on the hardware means
-"store this as the program", not "show this now". The board keeps a factory default
-message that survived every write made so far.
+"upload, swap cables, look". `FanDisplayTransport.store(_:)` on the hardware means
+"write this into the head's table", not "show this now". The factory default message
+that shipped on the head **was erased on 2026-09-01** by a blanket header sweep; the
+display has been dark since. That, not a dead MCU, is what blind writes cost on this
+device — see the guardrail in `protocol-discovery.md` and decisions D7 and D9.
 
 If the device is missing, check that first. Also verify the cable carries data; charge-only
 micro-USB cables are common and produce an identical symptom.

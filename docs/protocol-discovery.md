@@ -4,9 +4,19 @@ The one genuinely unsolved problem. The app is straightforward; this is not.
 
 ## What we know
 
-8-byte frames. Report ID 0. Output and Feature reports both available, both 8 bytes. An
-interrupt IN endpoint exists, so the device *can* talk back — that feedback channel is the
-most valuable asset in this effort.
+8-byte frames. Report ID 0. Output and Feature reports both declared, both 8 bytes. An
+interrupt IN endpoint is declared too.
+
+**Neither return channel carries anything (established 2026-09-01).** The interrupt IN
+endpoint has never produced a report, through two independent listeners. Every
+GET_REPORT, input or feature, returns the last USB SETUP packet the firmware handled.
+The head is write-only from the host's side. Do not design an experiment around an
+acknowledgement or a read-back; there is none.
+
+**There is no live observation either.** The data port is on the rotating head, so the fan
+cannot spin while it is connected. Every experiment is: upload with the data cable in, swap
+to the power cable, spin, look, swap back. One cable swap per observation, paid by the
+owner. Anything below that says "watch the fan" means "after the swap".
 
 No public documentation exists for `0c45:7701`.
 
@@ -70,20 +80,21 @@ Use `Tools/hidfan` (build with `Tools/HIDFan/build.sh`).
 **Start with the text hypothesis, not the byte sweep.** The fan stores 8 messages of 26
 characters, so try sending ASCII before anything else: a header byte followed by 7
 characters, four packets to a message, with a slot index somewhere in the header. Vary one
-thing at a time — slot, packet index, first byte — and watch for the text appearing at all,
-even garbled. Garbled text is a solved protocol; a blank fan is not.
+thing at a time — slot, packet index, first byte — and, after the cable swap, look for the
+text appearing at all, even garbled. Garbled text is a solved protocol; a blank fan is not.
+Note that the sweeps of 2026-09-01 already covered every two-byte header with `FF` and
+`55 AA` payloads; a text hypothesis now needs the `A0 <addr>` framing in front of it.
 
 Only fall back to the sweep below if the text hypothesis produces nothing.
 
 Method, in order:
 
-1. **Listen first.** Open the device and send nothing. Does it emit input reports
-   unprompted? Anything it says unbidden is free information.
-2. **Read the feature report** (`g`). Devices like this often expose current state there,
-   and a readable state field is a Rosetta stone.
-3. **Sweep the first byte.** Watch both the fan and the IN endpoint. A command byte that
-   provokes *any* response — a change in the blades, an input report, a write failure —
-   narrows the space enormously.
+1. **Listen first.** Done; nothing arrives, ever. Kept here as the record.
+2. **Read the feature report** (`g`). Done; it is an endpoint-0 echo, not state.
+3. **Sweep the first byte.** Done for all 65,536 two-byte headers. The only USB-side
+   signal on this head is timing: `A0`-headed writes sometimes take tens of milliseconds
+   and once per long run block for the host's 5 s timeout. Everything else is accepted
+   silently. The blades can only be checked after a cable swap.
 4. **Walk single bits.** If a column of LEDs lights in a pattern that tracks the bit
    position, the frame layout is direct-mapped and the problem is essentially solved.
 5. **Look for framing.** Most devices of this vintage use a start marker, a length or index
@@ -95,7 +106,17 @@ what `0x40` does, and it is exactly what gets forgotten between sessions.
 
 ## Guardrail
 
-Writing arbitrary bytes to a device with unknown firmware can in principle brick it. This
-device is old, cheap, and already unusable from macOS, so the risk is acceptable — but do
-not write to the Feature report space blindly if the Output space is producing results.
-Feature reports are more likely to touch configuration or firmware state.
+The failure that actually happened was not a bricked MCU. A blanket header sweep with an
+all-ones payload **erased the EEPROM that holds the message table**, and with it the
+factory demo. The head is alive, the motor spins, and nothing is displayed. That is the
+realistic cost of blind output-report writes on this device: lost data, presumably
+rewritable once the table format is known, but not recoverable by us today because there
+is no read path.
+
+Feature reports are a different class of risk. On a bridge chip they are where device
+configuration lives; corrupting that is not recoverable and, with no read path, not even
+diagnosable. Feature-report writes are declined (decisions.md D7) except for a specific,
+argued hypothesis, and never as a sweep.
+
+Nothing in the app target writes to the head at all (D9). Blind writes are a `Tools/`
+activity, done deliberately, with the owner at the fan and asking for it.

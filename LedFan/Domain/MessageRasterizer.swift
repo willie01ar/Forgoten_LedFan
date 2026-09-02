@@ -1,10 +1,11 @@
 import Foundation
 
 nonisolated protocol MessageRasterizing: Sendable {
-    func frame(for text: String, ledsPerArm: Int) -> POVFrame
+    func strip(for text: String, ledsPerArm: Int) -> ColumnStrip
 }
 
-/// Lays glyphs left to right and centres them vertically on the arm.
+/// Lays glyphs left to right and centres them vertically on the arm. Knows nothing about
+/// revolutions or angles; that is the composer's job.
 nonisolated struct ColumnRasterizer: MessageRasterizing {
     let letterSpacing: Int
 
@@ -12,10 +13,8 @@ nonisolated struct ColumnRasterizer: MessageRasterizing {
         self.letterSpacing = max(0, letterSpacing)
     }
 
-    func frame(for text: String, ledsPerArm: Int) -> POVFrame {
-        guard ledsPerArm > 0, !text.isEmpty else {
-            return POVFrame(ledsPerArm: max(0, ledsPerArm), columns: [])
-        }
+    func strip(for text: String, ledsPerArm: Int) -> ColumnStrip {
+        guard ledsPerArm > 0, !text.isEmpty else { return .empty(ledsPerArm: ledsPerArm) }
 
         let verticalOffset = max(0, (ledsPerArm - GlyphFont.glyphHeight) / 2)
         let spacing = [UInt16](repeating: 0, count: letterSpacing)
@@ -23,7 +22,7 @@ nonisolated struct ColumnRasterizer: MessageRasterizing {
         let columns = text.flatMap { character in
             GlyphFont.columns(for: character).map { shift($0, by: verticalOffset, limitedTo: ledsPerArm) } + spacing
         }
-        return POVFrame(ledsPerArm: ledsPerArm, columns: columns)
+        return ColumnStrip(ledsPerArm: ledsPerArm, columns: columns)
     }
 
     // MARK: - Helpers

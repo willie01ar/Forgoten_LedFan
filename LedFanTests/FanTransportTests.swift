@@ -3,90 +3,75 @@ import Testing
 @testable import LedFan
 
 struct FanTransportTests {
-    private let rasterizer = ColumnRasterizer()
+    private func message(_ text: String = "HI", slot: Int = 0) throws -> FanMessage {
+        try FanMessage(slot: slot, text: text)
+    }
 
     // MARK: - Simulated transport
 
-    @Test func displayingBeforeConnectingThrows() async {
-        let transport = SimulatedFanTransport(ledsPerArm: 11)
-        let frame = rasterizer.frame(for: "HI", ledsPerArm: 11)
-
+    @Test func storingBeforeConnectingThrows() async throws {
+        let transport = SimulatedFanTransport()
+        let message = try message()
         await #expect(throws: FanTransportError.notConnected) {
-            try await transport.display(frame)
+            try await transport.store(message)
         }
     }
 
-    @Test func connectingThenDisplayingSucceeds() async throws {
-        let transport = SimulatedFanTransport(ledsPerArm: 11)
+    @Test func connectingThenStoringSucceedsAndIsRetainedPerSlot() async throws {
+        let transport = SimulatedFanTransport()
         try await transport.connect()
-        try await transport.display(rasterizer.frame(for: "HI", ledsPerArm: 11))
+        try await transport.store(message("ONE", slot: 0))
+        try await transport.store(message("TWO", slot: 1))
+        try await transport.store(message("THREE", slot: 0))
+
+        #expect(await transport.message(inSlot: 0)?.text == "THREE")
+        #expect(await transport.message(inSlot: 1)?.text == "TWO")
+        #expect(await transport.message(inSlot: 2) == nil)
     }
 
-    @Test func disconnectingWithoutConnectingDoesNotTrap() async {
-        let transport = SimulatedFanTransport(ledsPerArm: 11)
+    @Test func disconnectingWithoutConnectingDoesNotTrap() async throws {
+        let transport = SimulatedFanTransport()
         await transport.disconnect()
+        let message = try message()
         await #expect(throws: FanTransportError.notConnected) {
-            try await transport.display(rasterizer.frame(for: "HI", ledsPerArm: 11))
+            try await transport.store(message)
         }
     }
 
-    @Test func displayedFramesAreObservable() async throws {
-        let transport = SimulatedFanTransport(ledsPerArm: 11)
-        let frame = rasterizer.frame(for: "HI", ledsPerArm: 11)
+    @Test func storedMessagesAreObservable() async throws {
+        let transport = SimulatedFanTransport()
+        let message = try message("HI", slot: 4)
         try await transport.connect()
-        try await transport.display(frame)
+        try await transport.store(message)
 
-        var frames = transport.frames.makeAsyncIterator()
-        #expect(await frames.next() == frame)
+        var stored = transport.storedMessages.makeAsyncIterator()
+        #expect(await stored.next() == message)
     }
 
-    @Test func reportedArmLengthMatchesConfiguration() async {
-        let transport = SimulatedFanTransport(ledsPerArm: 7)
-        #expect(await transport.ledsPerArm == 7)
+    @Test func reportedGeometryMatchesConfiguration() async {
+        let geometry = FanGeometry(ledsPerArm: 7, columnsPerRevolution: 90)
+        let transport = SimulatedFanTransport(geometry: geometry)
+        #expect(await transport.geometry == geometry)
+        #expect(transport.storeAvailability == .available)
     }
 
-    // MARK: - Packet encoder
+    // MARK: - Hardware transport, without hardware
 
-    @Test func encoderPacksColumnsIntoEightByteReports() throws {
-        let frame = rasterizer.frame(for: "A", ledsPerArm: 11)
-        let packets = try SequencedColumnEncoder().packets(for: frame)
-
-        #expect(packets.allSatisfy { $0.count == SequencedColumnEncoder.reportSize })
-        #expect(packets.count == 2)
-        #expect(packets[0][0] == 0)
-        #expect(packets[1][0] == 1)
-    }
-
-    @Test func encoderPacketCountMatchesColumnDensity() throws {
-        let frame = POVFrame(ledsPerArm: 11, columns: [UInt16](repeating: 1, count: 7))
-        let packets = try SequencedColumnEncoder().packets(for: frame)
-
-        #expect(packets.count == 3)
-        #expect(packets.allSatisfy { $0.count == SequencedColumnEncoder.reportSize })
-    }
-
-    @Test func encoderPadsAShortFinalPacketWithZeros() throws {
-        let frame = POVFrame(ledsPerArm: 11, columns: [0x0102, 0x0304, 0x0506, 0x0708])
-        let packets = try SequencedColumnEncoder().packets(for: frame)
-
-        #expect(packets[0] == [0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0])
-        #expect(packets[1] == [1, 0x07, 0x08, 0, 0, 0, 0, 0])
-    }
-
-    @Test func encoderNumbersPacketsSequentiallyAndWrapsAtOneByte() throws {
-        let columnCount = SequencedColumnEncoder.columnsPerPacket * 300
-        let frame = POVFrame(ledsPerArm: 11, columns: [UInt16](repeating: 1, count: columnCount))
-        let packets = try SequencedColumnEncoder().packets(for: frame)
-
-        #expect(packets.count == 300)
-        for (index, packet) in packets.enumerated() {
-            #expect(packet[0] == UInt8(index % 256))
+    @Test func theHardwareTransportSaysItCannotStoreMessages() {
+        let transport = HIDFanTransport()
+        guard case .unavailable(let reason) = transport.storeAvailability else {
+            Issue.record("expected the hardware transport to be unavailable for storing")
+            return
         }
+        #expect(reason == FanTransportError.protocolNotYetKnown.localizedDescription)
+        #expect(!reason.lowercased().contains("cable"))
     }
 
-    @Test func encoderRejectsAnEmptyFrame() {
-        #expect(throws: FanTransportError.protocolNotYetKnown) {
-            try SequencedColumnEncoder().packets(for: .empty)
+    @Test func storingOnDisconnectedHardwareThrowsNotConnected() async throws {
+        let transport = HIDFanTransport()
+        let message = try message()
+        await #expect(throws: FanTransportError.notConnected) {
+            try await transport.store(message)
         }
     }
 
@@ -94,7 +79,8 @@ struct FanTransportTests {
 
     @Test func everyTransportErrorHasAHumanReadableDescription() {
         let errors: [FanTransportError] = [
-            .deviceNotFound, .openFailed(code: -1), .notConnected, .writeFailed(code: -2), .protocolNotYetKnown
+            .deviceNotFound, .openFailed(code: -1), .notConnected, .writeFailed(code: -2),
+            .protocolNotYetKnown, .writingDisabled
         ]
         for error in errors {
             #expect(error.errorDescription?.isEmpty == false)
@@ -106,5 +92,12 @@ struct FanTransportTests {
         let message = FanTransportError.deviceNotFound.localizedDescription.lowercased()
         #expect(message.contains("data cable"))
         #expect(message.contains("power"))
+    }
+
+    @Test func theUnknownProtocolMessageDoesNotBlameTheUser() {
+        let message = FanTransportError.protocolNotYetKnown.localizedDescription.lowercased()
+        #expect(message.contains("isn't known yet"))
+        #expect(!message.contains("cable"))
+        #expect(!message.contains("check"))
     }
 }

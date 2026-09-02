@@ -1,32 +1,38 @@
 import Foundation
 
-/// Renders to the on-screen fan instead of hardware. Also the seam unit tests write against.
+/// Stores messages in memory instead of on a fan. Also the seam unit tests write against.
 actor SimulatedFanTransport: FanDisplayTransport {
     nonisolated let displayName = "Simulated fan"
+    nonisolated let storeAvailability: FanStoreAvailability = .available
 
-    /// Every frame handed to `display(_:)`, newest wins. Single consumer.
-    nonisolated let frames: AsyncStream<POVFrame>
+    /// Every message handed to `store(_:)`, newest wins. Single consumer; a test seam (D3).
+    nonisolated let storedMessages: AsyncStream<FanMessage>
 
-    private let arms: Int
-    private let continuation: AsyncStream<POVFrame>.Continuation
+    private let fanGeometry: FanGeometry
+    private let continuation: AsyncStream<FanMessage>.Continuation
+    private var slots: [Int: FanMessage] = [:]
     private var isConnected = false
 
-    init(ledsPerArm: Int = 11) {
-        arms = ledsPerArm
-        let stream = AsyncStream.makeStream(of: POVFrame.self, bufferingPolicy: .bufferingNewest(1))
-        frames = stream.stream
+    init(geometry: FanGeometry = .preview) {
+        fanGeometry = geometry
+        let stream = AsyncStream.makeStream(of: FanMessage.self, bufferingPolicy: .bufferingNewest(1))
+        storedMessages = stream.stream
         continuation = stream.continuation
     }
 
-    var ledsPerArm: Int { arms }
+    var geometry: FanGeometry { fanGeometry }
+
+    /// What the simulated fan holds in a slot, for tests and previews.
+    func message(inSlot slot: Int) -> FanMessage? { slots[slot] }
 
     // MARK: - FanDisplayTransport
 
     func connect() async throws { isConnected = true }
 
-    func display(_ frame: POVFrame) async throws {
+    func store(_ message: FanMessage) async throws {
         guard isConnected else { throw FanTransportError.notConnected }
-        continuation.yield(frame)
+        slots[message.slot] = message
+        continuation.yield(message)
     }
 
     func disconnect() async { isConnected = false }

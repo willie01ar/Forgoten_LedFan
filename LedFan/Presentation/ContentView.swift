@@ -5,7 +5,7 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: Layout.loose) {
-            FanSimulatorView(frame: viewModel.previewFrame, accessibilityDescription: viewModel.message)
+            FanSimulatorView(frame: viewModel.previewFrame, accessibilityDescription: viewModel.previewDescription)
 
             controls
                 .padding(Layout.standard)
@@ -21,6 +21,7 @@ struct ContentView: View {
         .animation(.default, value: viewModel.lastError)
         .animation(.default, value: viewModel.status)
         .animation(.default, value: viewModel.transportKind)
+        .animation(.default, value: viewModel.selectedSlot)
     }
 
     // MARK: - Sections
@@ -37,10 +38,21 @@ struct ContentView: View {
             .disabled(viewModel.status.isBusy)
             .accessibilityLabel("Fan transport")
 
-            TextField("Message", text: $viewModel.message)
-                .textFieldStyle(.roundedBorder)
-                .font(.body)
-                .accessibilityLabel("Message to display on the fan")
+            LabeledContent("Slot") {
+                Picker("Slot", selection: $viewModel.selectedSlot) {
+                    ForEach(FanMessage.slots, id: \.self) { slot in
+                        Text("\(slot + 1)").tag(slot)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel("Message slot")
+            }
+            .font(.callout)
+
+            messageField
+
+            captions
 
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: Layout.standard) {
@@ -54,12 +66,38 @@ struct ContentView: View {
                 }
             }
 
-            if let caveat = viewModel.sendCaveat {
-                Label(caveat, systemImage: "flask")
+            if let lastStored = viewModel.lastStored {
+                Label(lastStored, systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Note: \(caveat)")
             }
+        }
+    }
+
+    private var messageField: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Layout.tight) {
+            TextField("Message", text: $viewModel.message)
+                .textFieldStyle(.roundedBorder)
+                .font(.body)
+                .accessibilityLabel("Message to display on the fan")
+
+            Text(viewModel.counterText)
+                .font(.callout.monospacedDigit())
+                .foregroundStyle(viewModel.messageFitsTheFan ? Palette.counterWithinLimit : Palette.counterOverLimit)
+                .accessibilityLabel("\(viewModel.characterCount) of \(FanMessage.maximumCharacters) characters")
+        }
+    }
+
+    @ViewBuilder
+    private var captions: some View {
+        if let problem = viewModel.lengthProblem {
+            Caption(text: problem, systemImage: "exclamationmark.circle.fill", tint: Palette.error, prefix: "Problem")
+        }
+        if let hint = viewModel.blankGlyphHint {
+            Caption(text: hint, systemImage: "character.textbox", tint: .secondary, prefix: "Note")
+        }
+        if let reason = viewModel.storeUnavailableReason {
+            Caption(text: reason, systemImage: "info.circle", tint: .secondary, prefix: "Note")
         }
     }
 
@@ -86,9 +124,25 @@ struct ContentView: View {
                 Task { await viewModel.sendMessage() }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(!viewModel.status.allowsSending)
+            .disabled(!viewModel.canSend)
             .accessibilityLabel("Send the message to the fan")
         }
+    }
+}
+
+// MARK: - Captions
+
+private struct Caption: View {
+    let text: String
+    let systemImage: String
+    let tint: Color
+    let prefix: String
+
+    var body: some View {
+        Label(text, systemImage: systemImage)
+            .font(.caption)
+            .foregroundStyle(tint)
+            .accessibilityLabel("\(prefix): \(text)")
     }
 }
 

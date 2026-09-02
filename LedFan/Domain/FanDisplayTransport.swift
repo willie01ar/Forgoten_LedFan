@@ -1,12 +1,20 @@
 import Foundation
 
-/// What a fan can do, independent of how it is wired.
+/// Whether a transport can accept messages at all. Unavailable carries copy for the user.
+nonisolated enum FanStoreAvailability: Sendable, Equatable {
+    case available
+    case unavailable(reason: String)
+}
+
+/// What a fan can do, independent of how it is wired. The unit of work is a message in a
+/// slot (D5); on hardware, storing means writing the head's table, not showing anything.
 nonisolated protocol FanDisplayTransport: Sendable {
     nonisolated var displayName: String { get }
-    var ledsPerArm: Int { get async }
+    nonisolated var storeAvailability: FanStoreAvailability { get }
+    var geometry: FanGeometry { get async }
 
     func connect() async throws
-    func display(_ frame: POVFrame) async throws
+    func store(_ message: FanMessage) async throws
     func disconnect() async
 }
 
@@ -16,6 +24,7 @@ nonisolated enum FanTransportError: Error, Sendable, Equatable {
     case notConnected
     case writeFailed(code: Int32)
     case protocolNotYetKnown
+    case writingDisabled
 }
 
 extension FanTransportError: LocalizedError {
@@ -30,7 +39,9 @@ extension FanTransportError: LocalizedError {
         case .writeFailed(let code):
             return "The fan rejected the write (IOKit error \(code))."
         case .protocolNotYetKnown:
-            return "The fan's command format has not been reverse-engineered yet."
+            return "The fan's message format isn't known yet, so messages can't be sent to it. Connecting still works and shows what the fan reports."
+        case .writingDisabled:
+            return "This version of the app never writes to the fan. Nothing was sent."
         }
     }
 }

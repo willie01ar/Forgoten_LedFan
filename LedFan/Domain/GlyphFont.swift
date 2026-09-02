@@ -16,6 +16,13 @@ nonisolated enum GlyphFont {
 
     static var supportedCharacters: Set<Character> { Set(table.keys) }
 
+    /// True when the character has a glyph (case-insensitive). Space counts: it draws as a gap on purpose.
+    static func supports(_ character: Character) -> Bool {
+        let uppercased = character.uppercased()
+        guard uppercased.count == 1, let key = uppercased.first else { return false }
+        return table[key] != nil
+    }
+
     // MARK: - Table
 
     private static let table: [Character: [UInt8]] = [

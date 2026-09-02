@@ -2,30 +2,35 @@ import Foundation
 import IOKit
 import IOKit.hid
 
-/// Talks to the physical fan over USB HID. Output reports travel the control pipe
-/// via SET_REPORT because the device exposes only an interrupt IN endpoint.
-/// Deliberately thin: it owns the handles and knows nothing about what the bytes mean.
+/// Talks to the physical fan over USB HID. It connects, reports geometry, and refuses to
+/// write (D9): there is deliberately no `IOHIDDeviceSetReport` anywhere in the app target.
 actor HIDFanTransport: FanDisplayTransport {
     nonisolated let displayName = "SONiX LED fan"
+    nonisolated let storeAvailability: FanStoreAvailability
+
+    /// Placeholder (D1): the real column count is unknown until the table format is.
+    static let placeholderGeometry = FanGeometry(ledsPerArm: 11, columnsPerRevolution: 180)
+    private static let tableAddress: UInt8 = 0
 
     private let vendorID: Int
     private let productID: Int
-    private let arms: Int
-    private let encoder: any FanPacketEncoding
+    private let tableSerializer: any MessageTableSerializing
+    private let eepromWriter: any EEPROMWriting
     private var manager: IOHIDManager?
     private var device: IOHIDDevice?
 
     init(vendorID: Int = 0x0C45,
          productID: Int = 0x7701,
-         ledsPerArm: Int = 11,
-         encoder: any FanPacketEncoding = SequencedColumnEncoder()) {
+         tableSerializer: any MessageTableSerializing = UnknownMessageTableSerializer(),
+         eepromWriter: any EEPROMWriting = EEPROMWriter()) {
         self.vendorID = vendorID
         self.productID = productID
-        self.arms = ledsPerArm
-        self.encoder = encoder
+        self.tableSerializer = tableSerializer
+        self.eepromWriter = eepromWriter
+        storeAvailability = .unavailable(reason: FanTransportError.protocolNotYetKnown.localizedDescription)
     }
 
-    var ledsPerArm: Int { arms }
+    var geometry: FanGeometry { Self.placeholderGeometry }
 
     // MARK: - FanDisplayTransport
 
@@ -47,16 +52,11 @@ actor HIDFanTransport: FanDisplayTransport {
         device = match
     }
 
-    func display(_ frame: POVFrame) async throws {
-        guard let device else { throw FanTransportError.notConnected }
-
-        for packet in try encoder.packets(for: frame) {
-            let result = packet.withUnsafeBufferPointer { buffer -> IOReturn in
-                guard let base = buffer.baseAddress else { return kIOReturnBadArgument }
-                return IOHIDDeviceSetReport(device, kIOHIDReportTypeOutput, 0, base, buffer.count)
-            }
-            guard result == kIOReturnSuccess else { throw FanTransportError.writeFailed(code: result) }
-        }
+    func store(_ message: FanMessage) async throws {
+        guard device != nil else { throw FanTransportError.notConnected }
+        let table = try tableSerializer.bytes(for: [message])
+        let packets = eepromWriter.packets(writing: table, toAddress: Self.tableAddress)
+        try write(packets)
     }
 
     func disconnect() async {
@@ -68,6 +68,12 @@ actor HIDFanTransport: FanDisplayTransport {
     }
 
     // MARK: - Helpers
+
+    /// D9: no writes until the serializer is real. When that decision is lifted, this is
+    /// where the SET_REPORT loop goes, pacing `EEPROMWriter.stallProneAddresses`.
+    private func write(_ packets: [[UInt8]]) throws {
+        throw FanTransportError.writingDisabled
+    }
 
     private static func firstDevice(in manager: IOHIDManager) -> IOHIDDevice? {
         (IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice>)?.first

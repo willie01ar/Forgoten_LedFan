@@ -7,8 +7,11 @@ Minimum width 360pt. The preview is the hero — it is the reason the app exists
 
 ## The preview
 
-A circular polar plot on a dark ground. Each column maps to an angle around the circle;
-each lit bit maps to a dot at a radius between hub and tip. This is not decoration: it is
+A circular polar plot on a dark ground. The frame is one revolution at fixed angular
+resolution (D1): each of its columns maps to an angle, so a short message occupies a
+proportional arc centred on the top of the disc and the rest stays dark. Each lit bit
+maps to a dot at a radius between hub and tip, glyph tops at the rim so text on the
+upper arc reads upright. A faint ring marks the LED band. This is not decoration: it is
 the honest depiction of what a persistence-of-vision fan paints, and it makes rasterisation
 bugs visible instantly.
 
@@ -20,8 +23,11 @@ adding rotation would show less, not more.
 No magic numbers in views. Spacing, sizes and colours come from `DesignSystem/`:
 
 ```swift
-enum Layout  { tight, standard, loose, simulatorSide, ledDiameter }
-enum Palette { litLED, unlitLED, simulatorBackground }
+enum Layout  { tight, standard, loose, simulatorSide, simulatorHubRatio, simulatorTipRatio,
+               ledDiameter, cornerRadius, minimumWindowWidth, shadowRadius }
+enum Palette { litLED, unlitLED, simulatorBackground, simulatorShadow,
+               statusIdle, statusConnected, statusFailed, error,
+               counterWithinLimit, counterOverLimit }
 ```
 
 Extend these rather than introducing literals. A literal in a view body is a defect.

@@ -15,15 +15,19 @@ documents, change the code.
 ```
 LedFan/
   Domain/
-    POVFrame.swift              frame value type
+    FanGeometry.swift           FanGeometry + ColumnStrip (D1)
+    POVFrame.swift              one revolution; count always == columnsPerRevolution
+    FrameComposer.swift         FrameComposing + RevolutionComposer (padding, wrapping, offset, mirroring)
+    FanMessage.swift            slot + text with the fan's limits; validation in init (D5)
     GlyphFont.swift             5x7 column font, ~55 glyphs. Data worth keeping.
-    MessageRasterizer.swift     MessageRasterizing + ColumnRasterizer
-    FanDisplayTransport.swift   transport protocol + FanTransportError
+    MessageRasterizer.swift     MessageRasterizing + ColumnRasterizer, geometry-free
+    FanDisplayTransport.swift   transport protocol (geometry, store, storeAvailability) + FanTransportError
     FanTransportProviding.swift FanTransportKind, the provider protocol, FixedTransportProvider
   Transport/
-    FanPacketEncoding.swift     protocol + SequencedColumnEncoder (A GUESS — see below)
-    HIDFanTransport.swift       actor over IOHIDDevice; matches via IOHIDManager, never opens it
-    SimulatedFanTransport.swift actor vending frames via AsyncStream
+    EEPROMWriter.swift          EEPROMWriting (KNOWN, D8): A0, address, six data bytes per report
+    MessageTableSerializer.swift MessageTableSerializing (UNKNOWN, D8): the one type that throws .protocolNotYetKnown
+    HIDFanTransport.swift       actor over IOHIDDevice; connects, reports geometry, never writes (D9)
+    SimulatedFanTransport.swift actor holding messages per slot; storedMessages stream is a test seam
     DefaultFanTransportProvider.swift  production wiring of kind -> transport
   Presentation/
     FanConnectionStatus.swift   connection state enum
@@ -67,15 +71,14 @@ Tools/                          throwaway probes, outside the app target
 
 ## Known problems
 
-1. **`SequencedColumnEncoder` is a guess.** It packs a sequence byte plus three big-endian
-   columns per report. There is no evidence the fan understands this. It exists to make the
-   boundary concrete and to give the tests something to assert against — not because it is
-   believed correct. Replacing it is the whole of `protocol-discovery.md`.
-2. **The UI does not consume `SimulatedFanTransport.frames`.** The stream exists and is
-   tested; the preview shows the rasterised message, not what was last sent.
-3. **Nothing is known to change on the blades.** Every write the app or the probe makes is
-   accepted by the firmware (see `protocol-findings.md`), but no probing session has yet
-   had someone watching the fan. That observation is the next step, not more code.
+1. **The fan's stored-table format is unknown and the factory demo is erased.** See the
+   end-of-day summary in `protocol-findings.md`. `UnknownMessageTableSerializer` is the
+   placeholder; `EEPROMWriter` already frames whatever it will produce as `A0 <addr>
+   <data>` packets. Milestone 2 is paused (D6) and the app never writes to the head (D9).
+2. **`HIDFanTransport.placeholderGeometry`** (11 LEDs, 180 columns) is a guess used only
+   for the preview; the real column count is unknown.
+3. **No scroll animation yet.** `columnOffset` is a tested parameter; Milestone 3 drives it
+   from a timer.
 
 ## Deliberate design decisions worth preserving
 
@@ -84,6 +87,9 @@ Tools/                          throwaway probes, outside the app target
   picker in the UI switches kinds, and switching disconnects the previous transport.
 - `IOHIDManagerOpen` is never called. Opening the manager before the device leaves report
   transfers failing with `kIOReturnNotOpen` on this fan.
-- The unknown protocol is confined to one type. Keep it that way.
-- `HIDFanTransport` is deliberately thin and untested; the logic worth testing lives in the
-  encoder.
+- The transport's unit of work is a `FanMessage` in a slot (D5). Frames, strips and
+  angular resolution are preview-only concerns; nothing above the transport knows the wire.
+- The unknown protocol is confined to one type, `UnknownMessageTableSerializer`. Keep it
+  that way. The known framing, `EEPROMWriter`, is fully tested.
+- `HIDFanTransport` is deliberately thin. It connects, reports geometry and refuses to
+  store; it contains no report-writing call at all (D9).
