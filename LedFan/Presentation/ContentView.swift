@@ -20,12 +20,23 @@ struct ContentView: View {
         .animation(.default, value: viewModel.previewFrame)
         .animation(.default, value: viewModel.lastError)
         .animation(.default, value: viewModel.status)
+        .animation(.default, value: viewModel.transportKind)
     }
 
     // MARK: - Sections
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: Layout.standard) {
+            Picker("Fan", selection: $viewModel.transportKind) {
+                ForEach(FanTransportKind.allCases) { kind in
+                    Text(kind.title).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .disabled(viewModel.status.isBusy)
+            .accessibilityLabel("Fan transport")
+
             TextField("Message", text: $viewModel.message)
                 .textFieldStyle(.roundedBorder)
                 .font(.body)
@@ -41,6 +52,13 @@ struct ContentView: View {
                     statusLabel
                     buttons
                 }
+            }
+
+            if let caveat = viewModel.sendCaveat {
+                Label(caveat, systemImage: "flask")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Note: \(caveat)")
             }
         }
     }

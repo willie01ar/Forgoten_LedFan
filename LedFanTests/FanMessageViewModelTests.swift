@@ -6,6 +6,8 @@ import Testing
 actor RecordingTransport: FanDisplayTransport {
     nonisolated let displayName = "Recording"
     private(set) var displayedFrames: [POVFrame] = []
+    private(set) var connectCount = 0
+    private(set) var disconnectCount = 0
     private let arms: Int
     private let connectShouldFail: Bool
     private let displayShouldFail: Bool
@@ -19,6 +21,7 @@ actor RecordingTransport: FanDisplayTransport {
     var ledsPerArm: Int { arms }
 
     func connect() async throws {
+        connectCount += 1
         if connectShouldFail { throw FanTransportError.deviceNotFound }
     }
 
@@ -27,7 +30,20 @@ actor RecordingTransport: FanDisplayTransport {
         displayedFrames.append(frame)
     }
 
-    func disconnect() async {}
+    func disconnect() async { disconnectCount += 1 }
+}
+
+/// One recording transport per kind, so switching can be observed.
+struct RecordingTransportProvider: FanTransportProviding {
+    let simulated = RecordingTransport()
+    let hardware = RecordingTransport(ledsPerArm: 7)
+
+    func makeTransport(for kind: FanTransportKind) -> any FanDisplayTransport {
+        switch kind {
+        case .simulated: simulated
+        case .hardware: hardware
+        }
+    }
 }
 
 @MainActor
@@ -110,5 +126,81 @@ struct FanMessageViewModelTests {
     @Test func transportNameIsExposedForTheUI() {
         let viewModel = FanMessageViewModel(transport: RecordingTransport())
         #expect(viewModel.transportName == "Recording")
+    }
+
+    // MARK: - Transport selection
+
+    @Test func theSimulatedTransportIsTheDefault() {
+        let viewModel = FanMessageViewModel(transportProvider: RecordingTransportProvider())
+        #expect(viewModel.transportKind == .simulated)
+        #expect(viewModel.sendCaveat == nil)
+    }
+
+    @Test func switchingKindDisconnectsThePreviousTransportAndResetsState() async {
+        let provider = RecordingTransportProvider()
+        let viewModel = FanMessageViewModel(transportProvider: provider, transportKind: .hardware)
+        await viewModel.connect()
+        #expect(viewModel.previewFrame.ledsPerArm == 7)
+
+        viewModel.transportKind = .simulated
+
+        #expect(viewModel.status == .disconnected)
+        #expect(viewModel.lastError == nil)
+        #expect(viewModel.previewFrame.ledsPerArm == 11, "arm length returns to the default until the new transport connects")
+        await waitUntil { await provider.hardware.disconnectCount == 1 }
+        #expect(await provider.hardware.disconnectCount == 1)
+        #expect(await provider.simulated.connectCount == 0)
+    }
+
+    @Test func connectingAfterSwitchingUsesTheNewTransport() async {
+        let provider = RecordingTransportProvider()
+        let viewModel = FanMessageViewModel(transportProvider: provider)
+
+        viewModel.transportKind = .hardware
+        await viewModel.connect()
+        viewModel.message = "A"
+        await viewModel.sendMessage()
+
+        #expect(viewModel.previewFrame.ledsPerArm == 7)
+        #expect(await provider.hardware.displayedFrames.count == 1)
+        #expect(await provider.simulated.displayedFrames.isEmpty)
+    }
+
+    @Test func selectingTheSameKindAgainKeepsTheConnection() async {
+        let provider = RecordingTransportProvider()
+        let viewModel = FanMessageViewModel(transportProvider: provider)
+        await viewModel.connect()
+
+        viewModel.transportKind = .simulated
+
+        #expect(viewModel.status == .connected)
+        #expect(await provider.simulated.disconnectCount == 0)
+    }
+
+    @Test func hardwareSelectionCarriesTheProtocolCaveat() {
+        let viewModel = FanMessageViewModel(transportProvider: RecordingTransportProvider())
+        viewModel.transportKind = .hardware
+        #expect(viewModel.sendCaveat?.isEmpty == false)
+    }
+
+    @Test func aPinnedTransportIgnoresTheKind() async {
+        let transport = RecordingTransport()
+        let viewModel = FanMessageViewModel(transport: transport)
+        await viewModel.connect()
+
+        viewModel.transportKind = .hardware
+        await viewModel.connect()
+
+        #expect(viewModel.transportName == "Recording")
+        #expect(await transport.connectCount == 2)
+    }
+
+    // MARK: - Helpers
+
+    /// The ViewModel disconnects a replaced transport in a detached task; give it a few turns.
+    private func waitUntil(_ condition: () async -> Bool) async {
+        for _ in 0..<200 where await !condition() {
+            await Task.yield()
+        }
     }
 }

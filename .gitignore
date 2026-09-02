@@ -2,3 +2,4 @@ Tools/BLEProbe/bleprobe
 .DS_Store
 xcuserdata/
 build/
+Tools/HIDFan/hidfan

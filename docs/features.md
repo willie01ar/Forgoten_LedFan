@@ -51,13 +51,14 @@ The app must be fully usable and demoable with no hardware attached.
 ## F4 — Hardware connection
 
 **Acceptance**
-- [ ] Matches on `0x0C45:0x7701` via `IOHIDManager`.
+- [x] Matches on `0x0C45:0x7701` via `IOHIDManager`. (Matching only; the manager is never
+      opened — see `protocol-findings.md`.)
 - [x] Absent device produces `.deviceNotFound` with a message naming the two-port trap —
-      the user's most likely mistake is the power cable. (Message and code path exist;
-      not yet exercised against the device.)
+      the user's most likely mistake is the power cable. (Demonstrated with the cable out via
+      `HardwareChecklistUITests`, `LEDFAN_HARDWARE=absent`.)
 - [x] Connection state is visible in the UI at all times.
-- [ ] `disconnect()` closes the device and is safe to call when never connected.
-- [ ] Repeated `connect()` calls are idempotent.
+- [x] `disconnect()` closes the device and is safe to call when never connected.
+- [ ] Repeated `connect()` calls are idempotent. (Guarded in code; not yet demonstrated.)
 
 ---
 
@@ -69,9 +70,11 @@ The app must be fully usable and demoable with no hardware attached.
       `IOHIDDeviceSetReport`.
 - [x] A write failure surfaces the IOKit code in a human-readable message; the app does not
       crash and does not silently swallow it. (Verified against a mock, not hardware.)
-- [ ] **Blocked on the wire protocol.** Until it is known, this feature can be built,
+- [x] **Blocked on the wire protocol.** Until it is known, this feature can be built,
       tested against a mock, and left unverified against hardware. Say so in the UI rather
-      than implying success.
+      than implying success. (The USB fan selection shows a caveat under the controls.
+      Connect, send and disconnect against the device all succeed at the USB level. The
+      stored-table format is unknown; see `protocol-findings.md`, end-of-day summary.)
 
 ---
 

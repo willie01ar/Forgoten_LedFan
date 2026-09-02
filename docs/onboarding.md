@@ -24,11 +24,15 @@ ticked.
 
 ## Next tasks, in order
 
-1. **Hardware.** The device was enumerating on 2026-09-01. Build the app, pick the real
-   transport, and confirm `.deviceNotFound` versus a successful open. Nothing about the
-   wire protocol is known — read `hardware.md` first, then `protocol-discovery.md`.
-2. **Record everything** in `protocol-findings.md`, including the bytes that do nothing.
-3. Milestone 3 polish only after the fan shows a message.
+1. **Read the end-of-day summary in `protocol-findings.md` before touching the fan.** The
+   factory demo has been erased by probing; the head is dark until a valid table is
+   written. The table format is unknown and is not the sibling fans' format.
+2. **Route 1 is the only cheap route left:** the software that shipped with a
+   `0c45:7701` fan. Nothing else found online applies to this product ID.
+3. Blind probing costs the owner one cable swap per observation (the data port is on the
+   rotating head). Batch experiments; do not spend swaps on single packets.
+4. Feature-report writes need the owner's explicit consent. Not given as of 2026-09-01.
+5. Milestone 3 polish only after the fan shows a message.
 
 ## Commands
 

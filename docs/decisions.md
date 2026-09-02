@@ -4,6 +4,135 @@ Architect decisions. Newest first. A decision here overrides anything older in t
 
 ---
 
+## D9 — The app never writes to the fan until the table format is known
+**2026-09-02. Safety decision. Non-negotiable.**
+
+Blind writes erased the factory demo. That was an acceptable cost in a *tools* session with
+the owner present and consenting. It must never happen from the app.
+
+`HIDFanTransport.store(_:)` throws `.protocolNotYetKnown` until a real table serialiser
+exists. It connects, reports geometry, and refuses to write. Writing arbitrary bytes to the
+head stays a `Tools/` activity, done deliberately, with the owner at the fan.
+
+The UI must say this plainly when the hardware transport is selected — not fail silently,
+and not imply a send succeeded.
+
+---
+
+## D8 — Split the encoder: known framing, unknown table
+**2026-09-02. Refines the FanPacketEncoding seam.**
+
+Slice 3 established the transport-level shape with real evidence: `A0 <addr> <data…>`,
+consistent with a HID-to-I2C bridge writing a 24Cxx EEPROM at address `0xA0`. Only `A0`
+headers ever show write timing. That part is **known**.
+
+What lives *in* the EEPROM — the table the display firmware parses — is unknown, and is not
+the `0c45:7160` / `1a86:5537` sibling format.
+
+Split the seam accordingly:
+
+```swift
+/// KNOWN. Frames an EEPROM write as 8-byte reports: A0, address, up to 6 data bytes.
+nonisolated protocol EEPROMWriting: Sendable {
+    func packets(writing bytes: [UInt8], toAddress address: UInt8) -> [[UInt8]]
+}
+
+/// UNKNOWN. Serialises the message table the display firmware parses.
+nonisolated protocol MessageTableSerializing: Sendable {
+    func bytes(for messages: [FanMessage]) throws -> [UInt8]
+}
+```
+
+The first is testable today and should be fully unit tested — packet size, address
+increment, six-byte payload chunking, the 0x18–0x23 range noted as suspicious. The second
+throws `.protocolNotYetKnown` and is the entire remaining unknown, now one type wide
+instead of two concerns tangled together.
+
+---
+
+## D7 — Feature-report probing: declined for now
+**2026-09-02. Answers slice-3 open question 2.**
+
+**Decision: no.** Not a permanent no, but not a blind sweep.
+
+The upside is weaker than it looks. Every GET_REPORT on this head returns the last SETUP
+packet — the bridge has no feature-report handler at all. A device that does not implement
+feature reads probably does not implement feature writes either.
+
+The downside is worse than what we have already paid. The erased EEPROM is *data*, and
+presumably rewritable once the format is known. Feature reports on a bridge chip are where
+device configuration lives — I2C addressing mode, bus speed, or worse. Corrupting that is
+not recoverable, and with no read path there is no way to even diagnose it.
+
+Revisit only with a **specific hypothesis** about what a particular feature report does.
+Never as a sweep.
+
+---
+
+## D6 — Milestone 2 is paused; the preview is now the product
+**2026-09-02. Answers slice-3 open questions 1 and 3.**
+
+**Milestone 2 is paused**, not abandoned. Every published lead is closed, there is no read
+path, no live observation, and each experiment costs the owner a cable swap. Continuing to
+guess has poor expected value.
+
+The deliverable becomes Milestone 1 plus hardware connection and the transport picker: an
+app that connects to the real fan, reports what it is, and is honest that it cannot yet
+write to it.
+
+**Correcting slice 3's open question 3.** The report suggests angular resolution "matters
+less until the table format exists". The opposite is true. With Milestone 2 paused, the
+preview *is* the entire visible product, and it currently renders "HELLO" as unreadable
+spokes. **D1 is now the highest-priority engineering work in the project.**
+
+---
+
+## D5 — The transport's unit of work is a message in a slot, not a frame
+**2026-09-01. Supersedes part of D1. Triggered by the 8 x 26-character capability finding.**
+
+**Problem.** The fan stores 8 messages of 26 characters. A device with that model has a
+font in firmware and probably accepts text. Our transport contract takes a `POVFrame` of
+rasterised columns, which may be the wrong currency entirely — and we will not know which
+until the protocol is cracked.
+
+**Decision.** Do not bet on either. Make the transport's unit of work the domain concept,
+and let the encoder decide how it reaches the wire.
+
+```swift
+nonisolated struct FanMessage: Sendable, Equatable {
+    static let maximumCharacters = 26
+    static let slotCount = 8
+
+    let slot: Int        // 0..<slotCount
+    let text: String     // <= maximumCharacters after validation
+}
+
+nonisolated protocol FanDisplayTransport: Sendable {
+    nonisolated var displayName: String { get }
+    var geometry: FanGeometry { get async }
+
+    func connect() async throws
+    func store(_ message: FanMessage) async throws
+    func disconnect() async
+}
+```
+
+`FanPacketEncoding` now takes a `FanMessage`. If the device turns out to want text, the
+encoder emits characters. If it wants bitmaps, the encoder rasterises internally. Either
+way nothing above the transport changes — which is the point of having isolated the unknown
+there in the first place.
+
+**Effect on D1.** D1 still stands, but `POVFrame`, `FrameComposing` and
+`columnsPerRevolution` are now **preview-only concerns**. They describe what we draw on
+screen, not what we send. That is a simplification: `columnsPerRevolution` can be whatever
+makes the preview legible, with no claim about hardware.
+
+**New constraints to enforce.** 26 characters is a real hard limit, not a guess. The text
+field needs a character counter and validation, and the UI needs a slot picker (1-8).
+Truncation must be visible, never silent.
+
+---
+
 ## D1 — Frames are a full revolution; angular resolution is fixed geometry
 **2026-09-01. Answers slice-1 open question 1. Blocking for the encoder work.**
 

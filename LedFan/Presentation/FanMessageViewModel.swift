@@ -8,22 +8,44 @@ final class FanMessageViewModel {
         didSet { refreshPreview() }
     }
 
+    var transportKind: FanTransportKind {
+        didSet { if oldValue != transportKind { replaceTransport() } }
+    }
+
     private(set) var status: FanConnectionStatus = .disconnected
     private(set) var previewFrame: POVFrame = .empty
     private(set) var lastError: String?
 
-    private let transport: any FanDisplayTransport
+    private let transportProvider: any FanTransportProviding
     private let rasterizer: any MessageRasterizing
-    private var ledsPerArm = 11
+    private var transport: any FanDisplayTransport
+    private var ledsPerArm = FanMessageViewModel.defaultLEDsPerArm
 
-    init(transport: any FanDisplayTransport = SimulatedFanTransport(),
-         rasterizer: any MessageRasterizing = ColumnRasterizer()) {
-        self.transport = transport
+    private static let defaultLEDsPerArm = 11
+
+    init(transportProvider: any FanTransportProviding = DefaultFanTransportProvider(),
+         rasterizer: any MessageRasterizing = ColumnRasterizer(),
+         transportKind: FanTransportKind = .simulated) {
+        self.transportProvider = transportProvider
         self.rasterizer = rasterizer
+        self.transportKind = transportKind
+        transport = transportProvider.makeTransport(for: transportKind)
         refreshPreview()
     }
 
+    /// Pins one transport regardless of the selected kind. For tests and previews.
+    convenience init(transport: any FanDisplayTransport,
+                     rasterizer: any MessageRasterizing = ColumnRasterizer()) {
+        self.init(transportProvider: FixedTransportProvider(transport: transport), rasterizer: rasterizer)
+    }
+
     var transportName: String { transport.displayName }
+
+    /// Shown while the wire protocol is unknown, so a successful write is not mistaken for a working feature.
+    var sendCaveat: String? {
+        guard transportKind == .hardware else { return nil }
+        return "The fan's command format is still unknown. Send writes an experimental packet layout the fan may ignore."
+    }
 
     // MARK: - Lifecycle
 
@@ -61,5 +83,15 @@ final class FanMessageViewModel {
 
     private func refreshPreview() {
         previewFrame = rasterizer.frame(for: message, ledsPerArm: ledsPerArm)
+    }
+
+    private func replaceTransport() {
+        let previous = transport
+        transport = transportProvider.makeTransport(for: transportKind)
+        status = .disconnected
+        lastError = nil
+        ledsPerArm = Self.defaultLEDsPerArm
+        refreshPreview()
+        Task { await previous.disconnect() }
     }
 }

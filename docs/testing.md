@@ -48,7 +48,15 @@ frames and can be configured to fail on connect.
 
 ## Manual hardware checklist
 
-Not automatable. Run when hardware is attached.
+Needs the device, so it never runs by default. `LedFanUITests/HardwareChecklistUITests`
+drives the app through it and skips unless `LEDFAN_HARDWARE` is set:
+
+```bash
+TEST_RUNNER_LEDFAN_HARDWARE=attached xcodebuild -project LedFan.xcodeproj -scheme LedFan -destination 'platform=macOS' -only-testing:LedFanUITests/HardwareChecklistUITests test
+```
+
+Use `=absent` with the data cable unplugged for the missing-device path. The last item
+below is still a human's job.
 
 - [ ] Data cable in the fan's **second** port, not just the power cable.
 - [ ] `ioreg -c IOUSBHostDevice -r -w0 | grep -i sonix` shows the device.

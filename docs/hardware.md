@@ -21,8 +21,15 @@ Report descriptor, 41 bytes:
 
 ### What follows from this
 
-- **Use `IOHIDManager`.** No kext, no DriverKit, no serial driver. Nothing holds the
-  device exclusively.
+- **Use `IOHIDManager` for matching only.** No kext, no DriverKit, no serial driver.
+  Nothing holds the device exclusively. **Do not call `IOHIDManagerOpen`:** on this device
+  it leaves subsequent `GET_REPORT`/`SET_REPORT` calls failing with `kIOReturnNotOpen`.
+  Set matching, copy the devices, open the `IOHIDDevice` directly. Verified 2026-09-01,
+  inside and outside a sandbox.
+- **The feature report is an echo of endpoint 0**, not device state. It returns the last
+  eight bytes the firmware handled on the control pipe (the descriptor tail after
+  enumeration, the SET_REPORT setup packet after a write). Details in
+  `protocol-findings.md`.
 - **Output reports go over the control pipe** via SET_REPORT, because there is no
   interrupt OUT endpoint. `IOHIDDeviceSetReport` does this transparently — but it means
   writes are slower than a bulk endpoint and should not be issued in a tight loop.
@@ -38,6 +45,19 @@ Report descriptor, 41 bytes:
 **The fan has two ports.** The USB-A power cable has D+/D− unwired — it is a power supply,
 nothing more. A **second mini/micro-USB port on the fan is the data port.** Nothing
 enumerates unless a cable is in that second port.
+
+**The data port is on the rotating assembly** (established 2026-09-01). With the data
+cable plugged in the head cannot spin, and the motor is not powered. So there are two
+mutually exclusive phases:
+
+1. **Program:** data cable in, head stationary, powered by the Mac over USB. The board
+   enumerates as `0c45:7701` and whatever is sent is stored on the head.
+2. **Display:** data cable out, power cable in, head spins and paints the stored program.
+
+Consequences: nothing sent over USB can be observed live; every protocol experiment is
+"upload, swap cables, look". `FanDisplayTransport.display(_:)` on the hardware means
+"store this as the program", not "show this now". The board keeps a factory default
+message that survived every write made so far.
 
 If the device is missing, check that first. Also verify the cable carries data; charge-only
 micro-USB cables are common and produce an identical symptom.
@@ -56,11 +76,30 @@ This cost two false conclusions. Both were retracted.
 **Rule: never believe a negative hardware result without a known-good control device in the
 same run.** `Tools/usbdiff.sh` implements this — snapshot, hotplug, snapshot, diff.
 
+## Device capability (from the fan's own documentation, 2026-09-01)
+
+**The fan stores up to 8 messages of 26 characters each.**
+
+This is the strongest protocol evidence we have, and it changes the model:
+
+- A device that counts *messages* and *characters* almost certainly carries its own font in
+  firmware. It likely accepts **text**, not column bitmaps.
+- 26 characters fits exactly 4 reports of 7 payload bytes (one header byte + 7 chars = 8),
+  with 28 slots of capacity for 26 usable characters. Try this framing first.
+- There are 8 addressable slots, so expect a slot index somewhere in the command.
+
+None of this is confirmed. It is a hypothesis with unusually good odds, and it should be
+the first thing probed rather than the byte sweep.
+
 ## The wire protocol: unknown
 
-There is no public documentation and no prior art for `0c45:7701`. The one on-point forum
-thread was never answered. The command format must be derived. See
-`protocol-discovery.md`.
+There is no public documentation for `0c45:7701`. The Raspberry Pi forum thread on a
+"programmable USB LED fan" concerns a different device (`1D57:AC01`, programmed over I2C
+through a special cable) and is not relevant.
+
+There **is** prior art for a sibling: the Jaycar GH1031 fan is SONiX `0c45:7160`, has 11
+LEDs per arm, and its protocol is public (`github.com/fergofrog/microwave_usb_fan`). It is
+the first hypothesis to test. See `protocol-findings.md` for the format.
 
 The search space is small: 8-byte frames, almost certainly a command byte plus seven bytes
 of payload.

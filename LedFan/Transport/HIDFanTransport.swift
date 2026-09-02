@@ -29,6 +29,8 @@ actor HIDFanTransport: FanDisplayTransport {
 
     // MARK: - FanDisplayTransport
 
+    /// Matches without opening the manager: on this device, opening the manager first
+    /// leaves report transfers failing with kIOReturnNotOpen (see docs/protocol-findings.md).
     func connect() async throws {
         guard device == nil else { return }
 
@@ -36,20 +38,10 @@ actor HIDFanTransport: FanDisplayTransport {
         let criteria: [String: Int] = [kIOHIDVendorIDKey: vendorID, kIOHIDProductIDKey: productID]
         IOHIDManagerSetDeviceMatching(manager, criteria as CFDictionary)
 
-        let managerResult = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
-        guard managerResult == kIOReturnSuccess else { throw FanTransportError.openFailed(code: managerResult) }
-
-        guard let devices = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice>,
-              let match = devices.first else {
-            IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
-            throw FanTransportError.deviceNotFound
-        }
+        guard let match = Self.firstDevice(in: manager) else { throw FanTransportError.deviceNotFound }
 
         let deviceResult = IOHIDDeviceOpen(match, IOOptionBits(kIOHIDOptionsTypeNone))
-        guard deviceResult == kIOReturnSuccess else {
-            IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
-            throw FanTransportError.openFailed(code: deviceResult)
-        }
+        guard deviceResult == kIOReturnSuccess else { throw FanTransportError.openFailed(code: deviceResult) }
 
         self.manager = manager
         device = match
@@ -71,10 +63,13 @@ actor HIDFanTransport: FanDisplayTransport {
         if let device {
             IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone))
         }
-        if let manager {
-            IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone))
-        }
         device = nil
         manager = nil
+    }
+
+    // MARK: - Helpers
+
+    private static func firstDevice(in manager: IOHIDManager) -> IOHIDDevice? {
+        (IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice>)?.first
     }
 }

@@ -19,6 +19,9 @@ these documents disagree, the documents win — see `current-state.md` for why.
 | [`protocol-discovery.md`](protocol-discovery.md) | How to reverse-engineer the wire format |
 | [`current-state.md`](current-state.md) | Inventory of existing code and its trust level |
 | [`decisions.md`](decisions.md) | **Architect decisions. Overrides older docs.** |
+| [`briefs/`](briefs/) | Per-slice work briefs from the architect |
+| [`reports/`](reports/) | Per-slice acceptance reports from the build session |
+| [`protocol-findings.md`](protocol-findings.md) | Running log of protocol experiments, including negatives |
 | [`reports/`](reports/) | One report per work slice, for architect review. Newest is the current state of play |
 
 ## Ground rules for the build session

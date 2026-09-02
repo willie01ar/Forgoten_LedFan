@@ -3,11 +3,9 @@
 ## Trust level
 
 As of 2026-09-01 everything under `LedFan/` compiles in Swift 6 language mode with strict
-concurrency complete, builds without warnings, and passes 34 unit tests plus one UI test.
+concurrency complete, builds without warnings, and passes 40 unit tests, 2 UI tests, and 2 hardware checklist tests that skip without the device.
 The original draft was written without a toolchain; the compiled version differs from it
 mainly in isolation annotations (see below).
-
-`Tools/HIDFan/hidfan.swift` has still never been compiled.
 
 The specification in these documents is authoritative. Where the code disagrees with the
 documents, change the code.
@@ -21,10 +19,12 @@ LedFan/
     GlyphFont.swift             5x7 column font, ~55 glyphs. Data worth keeping.
     MessageRasterizer.swift     MessageRasterizing + ColumnRasterizer
     FanDisplayTransport.swift   transport protocol + FanTransportError
+    FanTransportProviding.swift FanTransportKind, the provider protocol, FixedTransportProvider
   Transport/
     FanPacketEncoding.swift     protocol + SequencedColumnEncoder (A GUESS — see below)
-    HIDFanTransport.swift       actor over IOHIDManager
+    HIDFanTransport.swift       actor over IOHIDDevice; matches via IOHIDManager, never opens it
     SimulatedFanTransport.swift actor vending frames via AsyncStream
+    DefaultFanTransportProvider.swift  production wiring of kind -> transport
   Presentation/
     FanConnectionStatus.swift   connection state enum
     FanMessageViewModel.swift   @MainActor @Observable
@@ -40,12 +40,14 @@ LedFanTests/                    Swift Testing
 
 LedFanUITests/                  XCTest, because XCUIApplication requires it
     LedFanUITests.swift              Milestone 1 flow: type, connect, send, disconnect
+    HardwareChecklistUITests.swift   docs/testing.md manual checklist; skipped unless LEDFAN_HARDWARE is set
 
 Tools/                          throwaway probes, outside the app target
     probe-output/               raw ioreg/HID captures from the hardware investigation
     usbdiff.sh                  differential ioreg snapshot around a hotplug
     hidprobe.sh                 interface classes, endpoints, report descriptor
-    HIDFan/hidfan.swift         interactive HID probe. Also never compiled.
+    HIDFan/hidfan.swift         HID probe: REPL, listen, feature, sweep, bits. Compiles; see build.sh.
+    HIDFan/*.py                 hidapi probes (sweeps, fills, stream writes). See HIDFan/README.md.
     BLEProbe/                   CoreBluetooth scanner. Moot — the fan is USB HID.
 
 ```
@@ -69,14 +71,19 @@ Tools/                          throwaway probes, outside the app target
    columns per report. There is no evidence the fan understands this. It exists to make the
    boundary concrete and to give the tests something to assert against — not because it is
    believed correct. Replacing it is the whole of `protocol-discovery.md`.
-2. **The UI cannot select the HID transport.** `FanMessageViewModel` defaults to the
-   simulated transport and nothing in the UI swaps it. Milestone 2 needs that switch.
-3. **The UI does not consume `SimulatedFanTransport.frames`.** The stream exists and is
+2. **The UI does not consume `SimulatedFanTransport.frames`.** The stream exists and is
    tested; the preview shows the rasterised message, not what was last sent.
+3. **Nothing is known to change on the blades.** Every write the app or the probe makes is
+   accepted by the firmware (see `protocol-findings.md`), but no probing session has yet
+   had someone watching the fan. That observation is the next step, not more code.
 
 ## Deliberate design decisions worth preserving
 
 - The default injected transport is **simulated**, not HID, so the app runs with no hardware.
+  The ViewModel depends on `FanTransportProviding`, never on a concrete transport; the
+  picker in the UI switches kinds, and switching disconnects the previous transport.
+- `IOHIDManagerOpen` is never called. Opening the manager before the device leaves report
+  transfers failing with `kIOReturnNotOpen` on this fan.
 - The unknown protocol is confined to one type. Keep it that way.
 - `HIDFanTransport` is deliberately thin and untested; the logic worth testing lives in the
   encoder.
