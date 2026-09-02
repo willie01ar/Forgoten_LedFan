@@ -652,3 +652,67 @@ the app's own `MessageRasterizing`, injected. Two numbers for D1 as well: `LedSc
 is this editor's screen width for the 11-LED fan, and the sample project's messages run
 102–157 columns, so 142 is a better preview `columnsPerRevolution` for an 11-LED head than
 the placeholder 180.
+
+---
+
+## 2026-09-02 — Slice 6: the last batch (D15)
+
+### A correction to the record before designing anything
+
+Re-reading `Tools/HIDFan/write_stream.py` (E2a): it sent the 8-bit pass first and the
+16-bit pass last, and the 16-bit pass's final packet `A0 00 00 s0..s4` lands, on an 8-bit
+device, at address 0 as `00 s0 s1 s2 s3 s4`, one byte late. So under the 8-bit model E2a
+left the count byte at 0x01 as `00` instead of `81`, and E2a was **not a valid test** of
+the un-obfuscated stream at base 0 under 8-bit addressing. E2b's tool wrote the 8-bit pass
+last and was valid. The 16-bit-model half of E2a was valid. Net: "un-obfuscated stream at
+base 0, 8-bit addressing" is still untested. It is in this batch.
+
+Also: the serializer's stream (Slice 5, Task 1) is byte-for-byte what E2a/E2b wrote apart
+from the number of trailing zeros (8 in the exe, 10 in the reconstruction). The brief's
+premise that E2a/E2b used a wrong format is not supported; their failures stand (E2b) or
+were invalid for the reason above (E2a, 8-bit half).
+
+### The batch
+
+One 256-byte image for block 0, four candidates at non-overlapping bases, every byte from
+the serializer's stream format: `00, 0x80|count, [cols+2] 00 03 00 00 00, columns, 00 00,
+zeros`. Every lit column is `FF FF` (all rows, all colour bits) and every dark one `00 00`,
+so the signatures survive any row rotation, byte order or colour convention, including
+whatever the mode-1 permutation does.
+
+| Base | Candidate | Why this base | Signature on the disc |
+|---|---|---|---|
+| `0x00`–`0x17` | P0: bare stream, 1 message, 6 columns | the E2a retest with a correct write order | one narrow, sharp-edged bright wedge |
+| `0x18`–`0x3F` | P1: bare stream, 12 columns | count byte at `0x19`, length byte at `0x1A`: inside the `A0` stall range, where the firmware demonstrably does something | a comb of six hairlines (on/off alternating) |
+| `0x40`–`0x6E` | P2: `01 <len> 00 00 00` then the stream, 16 columns | D15 candidate 1, the upload header's five bytes stored ahead of the stream (size class 1, real length; the mode-1 `0A 00` is not a length) | two thick bars (4 on, 4 off, 4 on, 4 off) |
+| `0x80`–`0xC9` | P3: bare stream, 32 columns | round-base hedge | one wide, solid bright arc |
+
+Image: `Tools/probe-output/2026-09-02-slice6-image.hex`. Packets, in send order:
+`Tools/probe-output/2026-09-02-slice6-packets.hex` (233 reports), built by
+`Tools/HIDFan/slice6_batch.py`:
+
+1. 16-bit hedge, page 4 (`A0 04 lo …`) then page 0 (`A0 00 lo …`), descending so the
+   `lo = 0` chunk lands last. On an 8-bit device these scribble on bytes 0–9, which step 2
+   then repairs.
+2. 8-bit block 0 (`A0 a …`, a = 0, 6, …, 0xFA), last: an 8-bit device ends exactly equal to
+   the image. On a 16-bit device the `a = 0` packet splats five bytes at `0x0000`, which
+   only touches P0, already tested there by E2a's valid 16-bit half.
+3. The same image into 8-bit blocks `A2` and `A4`, in case the parser's block is not 0.
+
+Not in the batch, by decision: the retired 1c length hypothesis (D15/brief), feature
+reports (D7), any text-shaped payload (row layout unknown; a text hit could not be told
+from a garbled one on a single look).
+
+### What each outcome means
+
+- **Dark:** none of the four bases, in either addressing model or in blocks A2/A4, holds a
+  table this head will display. With E2b (obfuscated, base 0), E1 (zeros), and the three
+  sweeps, that exhausts what the vendor's own serializer can tell us about placement. The
+  hardware path closes.
+- **One signature:** the base and layout that produced it are identified without a second
+  swap. Stop and hand back (brief).
+- **Two or more signatures:** the parser walks the block and honours several tables, which
+  is itself decisive. Record exactly which.
+- **Anything else** (a smear, a flicker, a partial arc): recorded verbatim; it means data is
+  being displayed under a layout none of the four intended, which still identifies the
+  addressing model.
