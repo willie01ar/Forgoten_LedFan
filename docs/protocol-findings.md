@@ -317,3 +317,338 @@ configuration or firmware state.
   path) but to capture its programming traffic from the vendor software under a VM.
 - Failing both: feature-report probing with the owner's consent, then structured guesses
   at the table (message count byte, per-message length, column pairs) each costing a swap.
+
+---
+
+## 2026-09-02 — THE VENDOR SOFTWARE WAS FOUND
+
+Route 1d (search in Chinese / non-English sources) succeeded where the English-language
+search of slice 3 failed. The editor is **"LedFan Editor"**, mirrored on a French hobbyist
+site: `https://www.zpag.net/Electroniques/Zip/LedFan.zip`. Now in `Vendor/`.
+
+Contents: `LedFan.exe` (MFC, PE32, dated 2014-05-08), `LIB/WxkUSB.dll` (45 KB),
+`LIB/LedFan.Ini` (UTF-16), font tables `THE_7ASCII.bin` / `the_11ASCII.bin` /
+`the_16ASCII.bin` / `the_11FH.bin` / `the_16FH.bin`, Chinese fonts `UserZK11.fnt` (1.4 MB)
+and `UserZK16.fnt` (2.0 MB), a vendor manual PDF, and a saved project
+`Rien compris.LDAT` (7532 bytes) containing real message data.
+
+### The transport layer is confirmed
+`WxkUSB.dll` is a renamed **`SonixUSB.DLL`** — the export directory still carries the
+original name. Exports: `OpenUSBDevice`, `CloseUSBDevice`, `ReadUSB`, `WriteUSB`,
+`SetOutputReport`, `GetInputReport`, `GetInputLength`, `GetOutputLength`, `GetErrorMsgA/W`.
+Imports: `SetupDiGetClassDevsA`, `SetupDiEnumDeviceInterfaces`, `HidD_GetHidGuid`,
+`HidD_GetAttributes`, `HidD_GetPreparsedData`, `HidP_GetCaps`, `HidD_SetOutputReport`,
+`HidD_GetInputReport`, `CreateFileA`, `WriteFile`.
+
+This is exactly the mechanism slice 3 inferred: HID enumeration, then output reports.
+
+**`WriteUSB` (RVA 0x1180) is a thin wrapper over `WriteFile`.** It does no framing. The
+packet structure is therefore built in `LedFan.exe`, which is where the remaining work is.
+
+### The PID is the sibling, not ours
+`LedFan.exe` calls `OpenUSBDevice` at three sites, each as
+`push 0x00007160 / push 0x00000C45 / call OpenUSBDevice` — file offsets 0x1fdde, 0x2019f,
+0x20314. Hardcoded to **0x0C45:0x7160**. Our head is **0x0C45:0x7701**: same vendor, same
+DLL family, different product. No occurrence of 0x7701 as an immediate anywhere in the exe.
+
+So this editor will not drive our fan as-is. Its value is that it reveals the family's
+framing, which the community reconstructions slice 3 tested may have gotten wrong.
+
+### `LedFan.Ini`
+`LedType=2`, `LedGap11=1`, **`LedScrW11=142`**, `LedColor=255`, `UseMidMode=0`, `bUserFont=0`.
+Effect vocabulary matches the sibling format's style/effect bytes: nine opening effects
+(B1-B9), four middle (D1-D4: contra/clockwise rotation, flash 3 times, remain), seven
+closing (E1-E7). Character limits vary by LED type and font: 20 English per segment, 13 or
+10 Chinese.
+
+Note our fan holds **26** characters, and this build's limit is 20 — further evidence
+0x7701 is a different, probably later, variant.
+
+### Font tables — the host rasterises, the fan does not
+Sizes are exactly `80 + 256 * n`: `THE_7ASCII.bin` = 80 + 256x8, `the_11ASCII.bin` and
+`the_16ASCII.bin` = 80 + 256x16. That reads as an 80-byte header plus 256 glyphs of
+8 columns, at 1 byte per column for 7 LEDs and 2 bytes per column for 11 and 16.
+
+**The editor shipping its own font tables is strong evidence the host rasterises text and
+uploads columns, rather than sending characters to a firmware font.** This contradicts the
+assumption behind D5 and needs an architect decision once confirmed.
+
+**The font data is obfuscated.** High bytes are uniformly 0x2f or 0x3f and glyphs do not
+render under a direct reading. It is NOT the 0xA4 subtract scheme from the sibling
+reverse-engineerings — that yields no small high bytes. A decoding constant or scheme has
+to be recovered; the ASCII tables are ideal for this because the plaintext is known: glyph
+0x41 must look like an "A".
+
+### What this changes
+- Route 1 is no longer closed. The artefact exists and is in the repository.
+- The remaining question is narrow and static: how does `LedFan.exe` build the buffer it
+  hands to `WriteUSB`, and how are the font tables encoded?
+- No cable swaps are needed for any of it.
+
+---
+
+## 2026-09-02 — Slice 5: static analysis of `Vendor/LedFan/LedFan/LedFan.exe`
+
+Build analysed: `LedFan.exe` md5 `49ac6bd7f675e027aad49b9c4f52f656`, PE32, ImageBase
+`0x400000`, `.text` RVA `0x1000` at file offset `0x400` (so `VA = file + 0x400C00`).
+`LIB/WxkUSB.dll` md5 `4e3f3bffbffa1da1d32e5b9e13cbd1c9`, byte-identical to the DLL in
+the ISO analysed in slice 3; the exe is a different build from that ISO's (`92df5dfb…`), so
+the ISO offsets do not apply here. Tools: pefile 2024.8.26, capstone 5.0.7, in a throwaway
+venv. Nothing in `Vendor/` was executed or modified.
+
+### Task 1 — how the exe builds what it hands to `WriteUSB`
+
+**Dynamic import.** `WxkUSB.dll` is not in the import table. At file `0x019866`–
+`0x0198cd` the exe resolves four names with `GetProcAddress` (via `[0x550418]`) into
+globals: `[0x5abd9c] = OpenUSBDevice`, `[0x5abd98] = CloseUSBDevice`,
+`[0x5abd94] = WriteUSB`, `[0x5abd90] = ReadUSB`. Every USB call goes through those.
+`GetOutputLength` and the other exports are never resolved.
+
+**The send routine, VA `0x420d70` (file `0x020170`).** Takes `esi` = a 9-byte buffer and
+`edi` = handle (0 means "open now"):
+
+```
+020170  al = buf[7]+buf[6]+buf[5]+buf[4]+buf[3]+buf[2]+buf[1]; buf[8] = al   ; checksum of bytes 1..7
+02019e  if no handle: OpenUSBDevice(0x0C45, 0x7160); -1 -> "USB Device Connect Failure!!!"
+0201f6  WriteUSB(handle, buf, 9, &written)                                   ; 9 = report id + 8
+020238  ReadUSB(handle, ack, 3, &read)                                       ; 3 bytes
+02025c  ack[2] -> lookup table at 0x420d0c (index ack[2]-0x2a, 0x2a..0x8a) ; error text
+020261  ack[2] == 0x80 -> success
+```
+
+So the **report is `00` + 8 bytes**: 7 payload bytes and a trailing checksum that is the
+byte sum of the 7. The **acknowledgement is 3 bytes** read from the input report; the
+third byte must be `0x80`. On Windows the first byte of a read is the report id (0), so the
+device's own reply begins at the second byte: two meaningful bytes, of which the second is
+the status. That is the sibling reconstructions' `24 80` exactly.
+
+**The upload routine, VA `0x420e90` (file `0x020290`).** Reads the serialised stream at
+`this+0x4fdac` with length `this+0x4fda8`, and the mode at `this+0x54510`:
+
+```
+020307  size class: len < 0x100 -> 1, < 0x200 -> 2, < 0x400 -> 3, < 0x800 -> 4,
+        else "IC ROM Over"                                          ; store is 2 KB
+02031d  OpenUSBDevice(0x0C45, 0x7160)
+0203d6  header report:  40 40 <size class> <b4> <b5> 00 00 (+ checksum)
+            mode == 1:  b4 b5 = 0A 00                                (0203f4)
+            otherwise:  b4 b5 = len & 0xFF, len >> 8                 (020420)
+020477  packet count = len / 5 (integer division; any remainder is never sent)
+0204d3  data reports:   40 23 d0 d1 d2 d3 d4 (+ checksum), five stream bytes each,
+            mode == 1:  each byte sent as (0xA4 - byte) & 0xFF        (0204e2 ...)
+            otherwise:  bytes sent raw
+0205a2  CloseUSBDevice. No terminator report.
+```
+
+Every report goes through the send routine above, so every one of them waits for the
+3-byte acknowledgement. Progress-bar messages `0x401`/`0x402` are interleaved.
+
+**The serializer, VA `0x4203f0` (file `0x01f7f0`).** Builds the stream in a 0x4000-byte
+member buffer. Offsets below are file offsets.
+
+```
+01f826  zero the buffer, len = 0
+01f83e  count = number of non-empty messages (call 0x41ec70); 0 -> "No Data Send!"
+01f86c  mode 1: emit 00, then (count | 0x80)          ; mode 0: emit 00, count ; else: count only
+01f8f4  for each message i (dialog controls 0x1005+i, at most 12):
+01f90a     open   = combo (id-0x64)  ; middle = combo (id) ; close = combo (id+0x384)   (CB_GETCURSEL 0x147)
+01f99c     total  = message column count (from the character table, [ebp+0xfc] chars)
+01f9ae     emit  total + 2
+01f9cb     emit  00
+01f9ec     emit  middle if UseMidMode (global 0x5aeb6c) else 03            ; "remain"
+01fa10     emit  (open << 4) | close
+01fa2a     emit  00 ; and a second 00 unless mode == 0
+01fa56     rasterise the characters into n records of 0x54 (84) bytes, sort (qsort, cmp 0x415db0)
+01fab3     for each character from the LAST to the first:                 ; reversed
+01fad6        for each of rec[0x0b] bytes starting at rec[0x0c]:          ; 2*width bytes, LE words
+01faeb           mode 0: bits 1,2,3 -> 0,1,2 (7-LED row remap)
+01fb27           mode 1 and (byte & index) != 0: in-place bit permutation over bits 15..5
+                 of the last two bytes (0x1fb3b–0x1fbc5; not fully decoded, see below)
+01fb0f           emit byte
+01fc05     emit 00 ; and a second 00 unless mode == 0
+01fc8e  after the last message: emit 8 x 00
+01fd48  call the upload routine
+```
+
+The 84-byte character record is the same one the `.LDAT` project file stores (Task 3):
+`u16 char, u16 width, u16 0, u16 height, u16 0, u8 0, u8 length = 2*width, u16 0`, then
+`width` little-endian 16-bit columns from offset 12, zero padded to 84 bytes.
+
+**Modes.** `this+0x54510` is set by VA `0x41fe90` (file `0x01f290`) from its first
+argument. Callers push `0` (file `0x01f1b5`), `1` (`0x01f215`) and `2` (`0x01f275`) from
+three adjacent menu handlers, and the saved value from `this+0x54518` on startup
+(`0x01ece1`). Together with the three font tables (7, 11, 16 rows) and the 7-LED row remap
+in mode 0, the reading is: **mode 0 = 7 LEDs, mode 1 = 11 LEDs, mode 2 = 16 LEDs.** The
+INI's `LedType=2` is this value.
+
+**What this settles about the sibling reconstructions.** For mode 1 (the 11-LED
+`0x7160` fan) the exe produces exactly the stream the Jaycar project reverse-engineered:
+`00`, `0x80|count`, per message `[cols+2][00][style][open<<4|close][00 00]`, columns
+reversed, `[00 00]`, trailing zeros, all 0xA4-subtracted on the wire behind `40 40` /
+`40 23` reports with a byte-sum checksum. Two differences from that reconstruction: this
+build's mode-1 header carries a fixed `0A 00` where the Jaycar code puts the real length,
+and this build appends 8 trailing zeros, not 10. Neither matters for the 0x7701 question:
+the sibling stream was already tried on our head, in both encodings, and rejected.
+
+**Not fully decoded.** The mode-1 bit permutation at `0x01fb3b`–`0x01fbc5` runs only when
+`(byte & byte_index) != 0`, walks bit positions 15 down to 5 of the two most recent bytes,
+and sets or clears one destination bit per source bit. Its exact mapping was not derived;
+on the evidence of the Jaycar capture it leaves the pixel bits 0–10 in place, so it most
+likely touches only the colour/flag bits. It is recorded here as a gap, not guessed at.
+
+**Secondary sites.** File `0x01fdcf`: a connection test that opens the device, reports to
+dialog items `0x172`/`0x173`, and closes. File `0x0201a8`, `0x02031d`: the opens listed in
+the brief (`0x1fdde`, `0x2019f`, `0x20314` are the `push 0x7160` instructions immediately
+before them). Strings: "USB Device Connect Failure!!!", "USB Write Data Error", "USB Read
+Data Error", "USB Write Data Failure!", "IC ROM Over", "No Data Send!".
+
+### Task 3 — `Rien compris.LDAT`
+
+7532 bytes = a 140-byte header + 88 records of 84 bytes. Header (little-endian u16):
+`0x2345 0x3011` (magic), `1` (version), `0x00A0`, `0x000B` (11 = LED rows), `5`, `0x0420`,
+`0x0130`, `0x0010`, `0x0400`, zeros, then at `0x4c` **eight u16 character counts, one per
+slot**: `17, 25, 22, 24, 0, 0, 0, 0`. The records follow in slot order with no separators.
+The four messages are French: "T'as Rien compris", "M, Vomis n'a rien compris", "Serge n'a
+rien compris", "Michel a toujours raison" — 102, 157, 133 and 143 columns.
+
+Each record is the serializer's character record (layout above). The column word maps
+**row 0 to bit 15 and rows 1–8 to bits 0–7** (rows 9–10 would be bits 8–9): it is
+"row r at bit r" rotated right by one. Rendering with that mapping gives clean Arial-style
+glyphs, for example:
+
+```
+'T' 0000 0000 8000 8000 801f 8000 0000    'R' 0000 0011 800e 8002 8002 801f 0000
+    ..####.                                   ..####.
+    ....#..                                   .#...#.
+    ....#..                                   ..####.
+    ....#..                                   ..#..#.
+    ....#..                                   ..#..#.
+    ....#..                                   .#...#.
+```
+
+**No per-message effect bytes are in the file.** Opening, middle and closing effects are
+read from the dialog's combo boxes at upload time (serializer, `0x01f90a`), not saved with
+the project. The header's `0x00A0`, `5`, `0x0420`, `0x0130`, `0x0010` and `0x0400` are
+unidentified; the last four look like editor window geometry.
+
+**Relationship to the wire.** The project stores exactly what the serializer emits per
+character: width, then `width` 16-bit columns, in the same bit layout, little-endian. The
+wire adds only the per-message envelope and the reversal.
+
+### Task 2 — the font tables
+
+**The decoder, not a cipher.** The exe's glyph readers, not the loader, define the format.
+File `0x01aea0` (16-row ASCII, table global `[0x5aec2c]`): offset = `4 + (code - 0x20) * 32`,
+copy 16 bytes taking **only the even byte of each 16-bit slot** and inverting it (`not dl`,
+`0x01aee9`), into an 8-column record (width 8, height 16). File `0x01ae20` (7-row ASCII,
+`[0x5aec28]`): offset = `4 + (code - 0x20) * 10`, seven even bytes with stride 2, **not
+inverted**, remapped `((b & 7) << 1) | (b & 0xF0)` so bit 3 is dropped and bits 0–2 move up.
+File `0x01b8fa` is a 12-column 16-row reader for a "FH" table (stride 64, skip 16). The
+11-row ASCII table follows the 16-row rule empirically (stride 32, even bytes inverted).
+
+So: the files begin with a 4-byte magic `ff 3f 7d 3c`; glyph 0 is the space (0x20); there
+is no 80-byte header; the odd bytes (`0x2f`/`0x3f`) are never read. That is why every
+byte-level scheme failed. Eliminated before the decoder was found: XOR with any single
+byte constant, ADD with any constant, the sibling 0xA4 subtraction, position-dependent
+XOR keyed on a blank space, bit reversal and nibble swap (no fixed-stride glyph index put a
+blank at 0x20 under any of them).
+
+**Row order inside a column word**, per source, with bit 0 = the even data byte's bit 0:
+
+| Source | Rows | Column word | Row r lives in bit |
+|---|---|---|---|
+| `THE_7ASCII.bin` | 7 | one byte | 0,1,2,4,5,6,7 (bit 3 unused) |
+| `the_11ASCII.bin` | 11 (9 used) | LE u16 | rows 0–7 → bits 8–15, rows 8–10 → bits 0–2 |
+| `the_16ASCII.bin` | 16 | LE u16 | rows 0–2 → bits 13–15, rows 3–15 → bits 0–12 |
+| `.LDAT` / system-font raster | 11 | LE u16 | row 0 → bit 15, rows 1–10 → bits 0–9 |
+
+Four different rotations of "row r at bit r". The serializer copies record bytes verbatim,
+so the wire carries the source's layout; only the mode-1 permutation at `0x01fb3b` could
+normalise it, and that loop was not decoded. Recorded as a gap.
+
+Evidence, decoded straight from the files:
+
+```
+THE_7ASCII.bin  'A' 'B' 'I' 'L' '0' '8'  (stride 10, 5 columns, rows = bits 0,1,2,4,5,6,7 of the even byte)
+  ..#..   .####   .###.   ....#   ..##.   .###.
+  .#.#.   #...#   ..#..   ....#   .#..#   #...#
+  .#.#.   #...#   ..#..   ....#   .#..#   #...#
+  #...#   #####   ..#..   ....#   .#..#   .###.
+  #####   #...#   ..#..   ....#   .#..#   #...#
+  #...#   #...#   ..#..   ....#   .#..#   #...#
+  #...#   .####   .###.   #####   ..##.   .###.
+
+the_16ASCII.bin 'A' 'B' 'I' 'L' '0' '8'  (stride 32, 8 columns, even bytes inverted, rows = bits 13,14,15,0..12 of the LE word)
+  ....#...   ...#####   ..#####.   .......#   ...###..   ...###..
+  ....#...   ..#....#   ....#...   .......#   ..#...#.   ..#...#.
+  ...#....   .#.....#   ....#...   .......#   .#.....#   .#.....#
+  ...#.#..   .#.....#   ....#...   .......#   .#.....#   .#.....#
+  ..#...#.   ..#....#   ....#...   .......#   .#.....#   ..#...#.
+  ..#...#.   ...#####   ....#...   .......#   .#.....#   ...###..
+  ..#####.   ..#....#   ....#...   .......#   .#.....#   ..#...#.
+  .#.....#   .#.....#   ....#...   .......#   .#.....#   .#.....#
+  .#.....#   .#.....#   ....#...   .......#   .#.....#   .#.....#
+  .#.....#   ..#....#   ....#...   .......#   ..#...#.   ..#...#.
+  .#.....#   ...#####   ..#####.   .#######   ...###..   ...###..
+  ........   ........   ........   ........   ........   ........
+  ........   ........   ........   ........   ........   ........
+  ........   ........   ........   ........   ........   ........
+  ........   ........   ........   ........   ........   ........
+  ........   ........   ........   ........   ........   ........
+
+the_11ASCII.bin 'A' 'B' 'I' 'L' '0' '8'  (stride 32, 8 columns, even bytes inverted, rows = bits 8..15,0,1,2 of the LE word)
+  ...#....   .######.   .#####..   ......#.   ..###...   .#####..
+  ..#.#...   #.....#.   ...#....   ......#.   .#...#..   #.....#.
+  ..#.#...   #.....#.   ...#....   ......#.   #.....#.   #.....#.
+  .#...#..   #.....#.   ...#....   ......#.   #.....#.   #.....#.
+  .#...#..   .######.   ...#....   ......#.   #.....#.   .#####..
+  .#####..   #.....#.   ...#....   ......#.   #.....#.   #.....#.
+  #.....#.   #.....#.   ...#....   ......#.   #.....#.   #.....#.
+  #.....#.   #.....#.   ...#....   ......#.   .#...#..   #.....#.
+  #.....#.   .######.   .#####..   #######.   ..###...   .#####..
+  ........   ........   ........   ........   ........   ........
+  ........   ........   ........   ........   ........   ........
+
+```
+
+### Task 4 — what transfers to `0x7701`
+
+**Transfers (same vendor, same DLL, same product family):**
+- Host-side rasterisation. The editor renders text to 16-bit columns with its own tables or
+  the system font, stores columns in the project, and uploads columns. No character codes
+  ever go to the fan.
+- The message-table model: a message count, per-message `[columns+2][00][style][open<<4|close]`,
+  reversed 16-bit columns, and effect vocabularies of 9/4/7 (matching our head's manual).
+- A 2 KB store ("IC ROM Over" above 0x800 bytes), consistent with a 24C16 behind a bridge.
+
+**Specific to `0x7160` (and its bridge firmware), not to our head:**
+- The `40 40` / `40 23` report framing with the byte-sum checksum and the `24 80` ack.
+  Our head answered nothing on the interrupt endpoint to any of it, and a full sweep of all
+  two-byte headers with the `40`-family included changed nothing on the blades. The ack
+  this exe insists on cannot be produced by our head.
+- The 0xA4 obfuscation and the `0A 00` header field are bridge-firmware conventions.
+
+**The `A0` behaviour is inconsistent with this framing.** This exe never emits a report
+whose first byte is `A0`; the only way `A0` appears on its wire is as the 0xA4-subtracted
+form of a data byte `0x04`, and data reports always start `40 23`. On our head, `A0` is the
+one header with write-cycle timing and the stall, and every `40`-headed report is inert.
+The two are different protocols. The slice-3 model (a bridge exposing raw `A0 <addr> <data>`
+EEPROM writes) stands, and this editor tells us what the *table inside* that EEPROM looks
+like for the sibling, which is exactly what E2a/E2b already wrote to our head without result.
+
+**Next experiment for the owner.** None with good odds. The one untested variant this
+analysis raises is that the sibling's bridge may store the header's size-class and length
+bytes ahead of the stream (EEPROM `[sz][len lo][len hi][00][00]` then the stream). It is a
+single swap and a low-probability guess; it should wait for route 1b, where an EEPROM
+clip turns the same question into a measurement.
+
+### Task 5 — D5
+
+Recommend revising D5's premise, not its contract. The evidence (font tables shipped with
+the editor, columns stored in the project, columns emitted by the serializer) says this
+family's hosts rasterise; the "firmware font" branch of the hedge is dead. Keep
+`FanMessage` as the transport unit — slots, count and text are real device concepts in
+this table — and make the future `MessageTableSerializing` conformance rasterise through
+the app's own `MessageRasterizing`, injected. Two numbers for D1 as well: `LedScrW11=142`
+is this editor's screen width for the 11-LED fan, and the sample project's messages run
+102–157 columns, so 142 is a better preview `columnsPerRevolution` for an 11-LED head than
+the placeholder 180.

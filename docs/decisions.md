@@ -4,6 +4,62 @@ Architect decisions. Newest first. A decision here overrides anything older in t
 
 ---
 
+## D12 — `columnsPerRevolution` stays 180, and gets revisited with scrolling
+**2026-09-02. Answers slice-4 open question 3.**
+
+Keep 180. A 26-character message spans 312°, leaving little dark arc, and the lower half
+reads rotated — but the preview's job is to let you judge your message, and letter size is
+what makes that possible. Shrinking the glyphs to buy dark space is the wrong trade.
+
+Revisit when scrolling lands. A scroll window shows part of the strip at a time, which
+changes this trade completely — so do not tune it further now. The number is preview-only
+(D5) and makes no claim about hardware.
+
+---
+
+## D11 — Glyph orientation is the composer's job
+**2026-09-02. Answers slice-4 open question 2. Approved as implemented.**
+
+Strip bit 0 is the glyph top; frame bit 0 is the innermost LED. Upright text on the upper
+arc therefore needs the glyph top at the rim, which means a mirror somewhere.
+
+Putting it in `RevolutionComposer` is right: the composer is the only layer that knows
+about geometry and orientation, and the alternative — flipping the rasterizer's bit order —
+would break the F2 contract and its tests for a reason that has nothing to do with
+rasterising.
+
+**Do not "fix" this later.** It looks like an inversion bug and is not. It is recorded here
+so a future session does not helpfully remove it.
+
+Caveat: this is the *preview's* orientation rule. Which way a real fan paints its glyphs is
+a hardware fact nobody has yet. When the table format arrives, expect to discover the
+device disagrees, and change the composer — not the rasterizer.
+
+---
+
+## D10 — `storeAvailability` joins the transport contract
+**2026-09-02. Answers slice-4 open question 1. Approved.**
+
+```swift
+nonisolated var storeAvailability: FanStoreAvailability { get }
+```
+
+Task 5 requires Send to be *disabled* rather than enabled-then-failing, and the ViewModel
+must not know which concrete transport can write. Without this property the only ways to
+satisfy both are type-checking the transport in the ViewModel or letting the view special-
+case the hardware case — each defeating the boundary the protocol exists to draw.
+
+One property, carrying its own user-facing reason, is proportionate.
+
+**One note for later.** The reason is currently a string, and there is a unit test asserting
+its copy does not mention the cable. That test is doing real work — the copy is a promise to
+the user that this is our gap, not their setup — but a domain type carrying presentation
+copy is a smell that only stays harmless while there is one case. If a second reason
+appears, make `FanStoreAvailability` carry a typed reason and move the copy to the
+presentation layer.
+
+---
+
 ## D9 — The app never writes to the fan until the table format is known
 **2026-09-02. Safety decision. Non-negotiable.**
 

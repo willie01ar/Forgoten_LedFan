@@ -31,36 +31,74 @@ blind probing.
 
 **Status: not yet located.** Worth real effort before falling back to route 3.
 
-### 1b. Get a read path onto the EEPROM — the strongest untried route
+### 1b. CLOSED — physical access to the chip
 
-**There is only one fan.** Willie owns no second unit of this or any other class, so
-anything requiring a sibling device is off the table. This route is about *his* fan.
+**The head cannot be dismantled without breaking it** (owner, 2026-09-02). There is one fan
+and no spare. Every route requiring a clip, a programmer, or sight of the PCB is off the
+table. Do not propose it again.
 
-The USB bridge is write-only. The EEPROM, if there is one, is not. An SOIC clip plus a ~$10
-CH341A programmer — or a Raspberry Pi / Arduino I2C bus — reads and writes it directly,
-bypassing the bridge. Four reasons that matters even though the table was erased:
+### 1c. Re-read `A0 <byte>` as a LENGTH, and send continuation packets
 
-1. **It closes the loop.** Today a write goes into the dark: no ack, no read-back, and the
-   only oracle is a cable swap. With a clip, every `A0 <addr> <data>` packet can be verified
-   byte for byte. That turns blind guessing into measurement, and it is the single biggest
-   change available to this project.
-2. **It confirms or kills the bridge hypothesis in one measurement.** If the bytes we sent
-   are sitting at the addresses we sent them to, `A0 <addr> <data>` as a raw I2C write is
-   proven. If the chip is untouched, the model is wrong and a day of inference goes with it.
-3. **Some of the factory table may survive.** Probing addressed blocks `A0`–`A8` with a
-   single address byte — 256 bytes per block. If the part is larger than what was swept
-   (a 24C16 spans eight blocks, `A0`–`AE`), untouched regions may still hold original data,
-   and the surviving fragments would show the table's structure directly.
-4. **It identifies the part**, and therefore the real capacity and addressing model, which
-   the probing had to hedge across.
+**Untested, free, and derived from data already in the log.** Currently the best lead.
 
-Direct writes then become the fast experiment loop: write a candidate table over I2C, swap
-to power, observe. Same cable-swap cost, but with the USB bridge removed as a variable.
+The stalls sit at `A0 18`, `A0 18`, `A0 23`, `A0 19`; the slow writes at `A0 1A` and
+`A0 24`. In decimal: stalls at 24, 25, 35; slow writes at 26 and 36. **The message length
+on this fan is 26 characters.** A second byte clustering around 24-26 is an odd thing for a
+plain EEPROM address to do.
 
-**Cheap first step, costing nothing:** open the head and photograph the PCB. Look for an
-8-pin SOIC marked `24C02` / `24C08` / `24C16`, `AT24…`, `BR24…`, or `FM24…`, and note the
-MCU marking. If there is no discrete EEPROM, the storage is internal to the MCU, this route
-closes, and we have learned that for the price of a screwdriver.
+**Hypothesis.** `A0 <length>` opens a transfer and the firmware then waits for the
+character data in following packets. The 5 s stall is the host timing out while the
+firmware waits for continuation packets that never arrive, which would explain three
+observations at once: only `A0` is ever processed, the stall depends on preceding packets,
+and it is independent of payload.
+
+Every sweep so far sent one packet per header and moved on. E2a/E2b did send streams, but
+framed in the sibling format, not this shape. **The sequence has never been tried.**
+
+**Experiment.** For a candidate length L (start at 26, then 24, 25, 35, 36):
+
+```
+A0 L  <6 chars>      then  <6 chars> <6 chars> ... as bare 8-byte packets
+A0 L  <6 chars>      then  A0 <index> <6 chars> ...
+A0 00 L <5 chars>    then  continuation
+```
+
+Send "AAAAAA…" — a single repeated character makes any partial success obvious on the
+blades. Try three or four variants, then one cable swap. Vary framing, not payload.
+
+Cost: one swap per batch. Odds: unknown, but the arithmetic is suggestive and nothing else
+free remains.
+
+### 1d. Search for the vendor software in Chinese
+
+Route 1's searches were English-language. SONiX is Taiwanese and these fans were built in
+Shenzhen; the editor, if it survives, is likely on a Chinese download site, a Taobao or 1688
+listing, or a driver-CD archive. Search terms worth trying: USB风扇 编辑软件, LED风扇 编程,
+闪光风扇 软件, plus the fan's moulded brand or model markings.
+
+Free, genuinely untried, and route 1 remains the highest-value outcome if it lands.
+
+### 1e. Ask people who might own one
+
+Post the VID/PID, the 41-byte report descriptor, the exterior photographs and the findings
+log somewhere with old-hardware expertise. For a product this age, someone owning the same
+fan or the original CD is not far-fetched, and it costs a post.
+
+### 1f. The button — mostly closed, one thing still worth knowing
+
+The fan has **one power button**. Pressed while USB power is connected, the head spins.
+There is no mode button and no obvious reset gesture, so restoring the factory demo this way
+is unlikely. Confirm and close with three quick attempts, all in the power phase and costing
+no cable swap: long press, double press, and hold-while-connecting-power.
+
+**The part that still matters.** On fans of this class the button often doubles as a message
+selector, advancing through the stored messages. If it does here, one cable swap can verify
+*several slots* instead of one — which changes how the next probing batch should be
+designed: write candidate data to multiple slots in a single programming phase, then step
+through them on a single swap.
+
+Not observable while the display is dark, but design the next batch on the assumption that
+it might be, and it costs nothing if it is not.
 
 ### 2. USB capture
 
