@@ -72,16 +72,16 @@ flicker as it spins up — is a result and must be recorded exactly as seen, not
 
 ## Acceptance
 
-- [ ] The batch is designed, justified against the slice-5 layout, and the packet stream is
+- [x] The batch is designed, justified against the slice-5 layout, and the packet stream is
       written to `Tools/probe-output/` before sending.
-- [ ] Each candidate has a distinct, documented visual signature.
-- [ ] The owner's checklist is written and in the report.
-- [ ] The observation is recorded verbatim in `docs/protocol-findings.md`, including a
+- [x] Each candidate has a distinct, documented visual signature.
+- [x] The owner's checklist is written and in the report.
+- [x] The observation is recorded verbatim in `docs/protocol-findings.md`, including a
       negative.
-- [ ] If dark: `protocol-discovery.md` and `hardware.md` are updated to state the hardware
+- [x] If dark: `protocol-discovery.md` and `hardware.md` are updated to state the hardware
       path is closed, with a one-paragraph summary of everything that was eliminated. Write
       it for someone arriving in two years with the same fan.
-- [ ] If lit: stop. Do not chase it further in this slice. Record exactly what was sent and
+- [ ] If lit: stop. (Not applicable: the disc stayed dark.) Do not chase it further in this slice. Record exactly what was sent and
       what appeared, and hand it back to the architect — a working write changes every
       remaining decision and deserves a fresh brief.
 
