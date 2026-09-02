@@ -4,6 +4,68 @@ Architect decisions. Newest first. A decision here overrides anything older in t
 
 ---
 
+## D15 — One final batch of guesses, then the hardware question is closed
+**2026-09-02. Answers slice-5 open question 3, and corrects its premise.**
+
+Slice 5 proposes deferring the "header bytes stored ahead of the stream" guess "until route
+1b, where an EEPROM clip turns the same question into a measurement".
+
+**Route 1b does not exist.** The head cannot be dismantled without breaking it, there is one
+fan, and `protocol-discovery.md` has said so since before this slice. Deferring to 1b means
+deferring forever, so the deferral has to be re-decided on its own merits.
+
+**Decision.** One final batch, then stop. Not one guess per swap — the oracle is too
+expensive for that. Assemble the two or three best remaining candidates in a single
+programming session, written at *different* EEPROM base addresses so that if the parser
+reads from a fixed base only one is live but any of them lighting the disc is informative:
+
+1. Slice 5's variant: `[size class][len lo][len hi][00][00]` ahead of the sibling stream.
+2. The 1c length hypothesis: `A0 <length>` followed by continuation packets.
+3. The sibling stream at whatever base the `A0` stall range (0x18-0x23) suggests.
+
+One swap. If the disc stays dark, the hardware path is closed for good and the project is
+what it is: a working app with no reachable fan. Record that as an outcome, not a failure —
+the analysis is sound and the device simply does not answer.
+
+---
+
+## D14 — `columnsPerRevolution` stays 180; 142 does not transfer
+**2026-09-02. Answers slice-5 open question 2. D12 stands.**
+
+`LedScrW11=142` is real, but it is the *sibling's* screen width, and it is inconsistent with
+our head: ours holds **26 characters**, and at the family's 8-column glyph pitch 26
+characters need ~208 columns. A 142-column screen cannot hold them. So either our head is a
+wider variant or it uses a narrower pitch — and either way 142 is not our number.
+
+Our own rasterizer uses a 6-column pitch (5-wide glyph plus 1 spacing), so a full 26-character
+message is 156 columns, which D12 already tuned 180 against.
+
+Keep 180. Record 142 in the findings as sibling evidence with the arithmetic above, so a
+later session does not adopt it as a hardware fact about our fan.
+
+---
+
+## D13 — D5's premise is revised; its contract stands
+**2026-09-02. Answers slice-5 open question 1. Approved as recommended.**
+
+D5 hedged between "the fan holds a firmware font and takes characters" and "the host
+rasterises and uploads columns". **The second is now established** for this product family:
+the editor ships its own font tables, stores rasterised columns in its project file, and its
+serializer emits columns. No character codes ever reach the fan.
+
+**The hedge was worth having and is now spent.** Drop the firmware-font branch.
+
+What does *not* change is the contract. `FanMessage { slot, text }` stays the transport's
+unit of work: slot, count and text are real concepts in this table format, not
+approximations. The future `MessageTableSerializing` conformance rasterises internally,
+through the app's own `MessageRasterizing`, injected — which is exactly the arrangement D8
+put in place, now with the ambiguity removed.
+
+This is what isolating the unknown behind one protocol was for. A finding that overturned
+the central assumption changes one type's implementation and no contract above it.
+
+---
+
 ## D12 — `columnsPerRevolution` stays 180, and gets revisited with scrolling
 **2026-09-02. Answers slice-4 open question 3.**
 

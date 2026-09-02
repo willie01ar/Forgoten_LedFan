@@ -37,7 +37,16 @@ blind probing.
 and no spare. Every route requiring a clip, a programmer, or sight of the PCB is off the
 table. Do not propose it again.
 
-### 1c. Re-read `A0 <byte>` as a LENGTH, and send continuation packets
+### 1c. RETIRED — `A0 <byte>` as a LENGTH with continuation packets
+
+**Retired 2026-09-02 by D15/slice 6.** Slice 5's static analysis of the vendor serializer
+showed the family frames data as a 2-byte header plus five stream bytes plus a checksum,
+with a mandatory 3-byte acknowledgement — nothing resembling length-then-continuation. The
+hypothesis rested on the stall range bracketing 26, an arithmetic coincidence, and it
+conflicts with the better-evidenced EEPROM-write model at the address level. Kept below for
+the record.
+
+#### Original text
 
 **Untested, free, and derived from data already in the log.** Currently the best lead.
 
