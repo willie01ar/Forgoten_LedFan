@@ -93,7 +93,21 @@ This is the strongest protocol evidence we have, and it changes the model:
 None of this is confirmed. It is a hypothesis with unusually good odds, and it should be
 the first thing probed rather than the byte sweep.
 
-## The wire protocol: unknown
+## The wire protocol: unknown, and the hardware path is closed (2026-09-02)
+
+After eleven cable swaps the head has never displayed anything the app or the probes
+wrote. Header sweeps, bit walks, zero fills, the sibling fan's complete table in both
+encodings and both addressing models, and four serializer-derived candidate tables at four
+bases under both power configurations all left the disc dark; the only response the head
+ever gave was write timing on `A0`-headed reports. The factory demo was erased on the
+first day of probing and has not been restorable. See the closing summary at the end of
+`protocol-findings.md`. Milestone 2 stays paused; the app connects, reports the device,
+and refuses to write (D9).
+
+The head's LEDs are **blue**. At power-on, before the blades move, the third LED from the
+hub and the third from the tip blink dimly for under a second: a power-on indicator, not
+a display.
+
 
 There is no public documentation for `0c45:7701`. The Raspberry Pi forum thread on a
 "programmable USB LED fan" concerns a different device (`1D57:AC01`, programmed over I2C

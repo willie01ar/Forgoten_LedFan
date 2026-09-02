@@ -1,5 +1,13 @@
 # Protocol discovery
 
+**CLOSED 2026-09-02 (D15, slice 6).** The hardware path is closed. Eleven cable swaps,
+every free route below exhausted, and the head has not lit a single LED during rotation
+since a header sweep erased its factory demo. The one-paragraph summary for a later
+reader is at the end of `protocol-findings.md` ("The hardware path is closed"). Only three
+things reopen it: the software that shipped with a `0c45:7701` fan, a USB capture of it
+programming one, or a second unit. The rest of this document is kept as the record of
+what was tried and why.
+
 The one genuinely unsolved problem. The app is straightforward; this is not.
 
 ## What we know

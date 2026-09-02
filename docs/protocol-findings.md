@@ -716,3 +716,81 @@ from a garbled one on a single look).
 - **Anything else** (a smear, a flicker, a partial arc): recorded verbatim; it means data is
   being displayed under a layout none of the four intended, which still identifies the
   addressing model.
+
+### Sent — 2026-09-02
+All 233 reports accepted in 4.0 s, no failures. One write took 11 ms (`A2 72 00…`, packet
+166); none of the `A0` writes stalled or slowed. The packet file was byte-identical to the
+committed one. Swap requested; observation pending.
+
+### Observation — Willie at the fan, 2026-09-02
+Verbatim: **"Still dark, motor spins fine."** No light of any kind, no signature, nothing
+at spin-up. (Button attempts from the checklist: not reported; asked.)
+
+Owner's proposal after the observation: the head has never been programmed **with the
+power cable connected (button off) and the data cable in at the same time**. Every upload
+so far was made with the head powered only through the data cable's USB 5 V. Recorded as
+an owner-initiated variable, outside the slice-6 brief's single-swap scope.
+
+### Re-send with both cables connected — 2026-09-02
+Head on the fan's own power cable (button off, head still; the power cable itself was on
+the Mac) **and** the data cable at the same time. The device enumerated normally in that
+state. The identical 233-report batch was re-sent: all accepted in 3.9 s, no failures, no
+slow writes at all this time. Button presses during the previous spin (long, double,
+hold-while-powering) did nothing. Observation pending.
+
+### Observation after the both-cables re-send — Willie at the fan, 2026-09-02
+Verbatim: **"I saw two or three leds flashing very dim when the head start spinning, it's a
+really dim flash that I'm associating with the head receiving power."** No sustained
+light, no signature. Whether this spin-up flash existed before this batch is the question
+that decides what it means; asked.
+
+Follow-up, verbatim: **"It looks like the flash happen in the third led from the hub and
+the third led from the tip. It don't last even a second and it's blue. It happens
+instantly when the power arrives even before the blades starts spinning."**
+
+Classification: **a power-on indicator, not a display of the written data.** It appears
+before rotation, which a persistence-of-vision display cannot do for table content, and it
+is two fixed LEDs (rows 2 and 8 of 11) while every lit column in the batch drove all
+eleven rows. Whether the blink predates the batch was asked; the owner had not been
+watching the power-on instant in earlier swaps, so it is recorded as "first noticed", not
+"new". The head's blue LEDs and its arm geometry (11 LEDs, third-from-hub and
+third-from-tip visible) are the only new facts.
+
+**Result of the slice-6 batch: dark.** Both power configurations. Neither of the four
+candidate tables, in either addressing model or in blocks A2/A4, is displayed.
+
+---
+
+## The hardware path is closed — 2026-09-02
+
+Written for whoever arrives later with the same fan, `0c45:7701`, SONiX, 11 blue LEDs,
+eight messages of 26 characters in its factory demo.
+
+**What the head is.** A USB low-speed HID device on the rotating hub, vendor usage page
+`0xFFFF`, 8-byte input, output and feature reports, one interrupt-IN endpoint. It
+enumerates only through the data cable in the hub's port; the fan cannot spin while that
+cable is in, so nothing can be observed while sending. From the host's side it is
+write-only: the interrupt endpoint never produces a report and every GET_REPORT returns
+the last SETUP packet. `IOHIDManagerOpen` must not be called on it.
+
+**What was tried, all with the owner observing after a cable swap, eleven swaps in total.**
+Every two-byte header with `FF` and with `55 AA` payloads (131,072 reports), every
+first byte and every single bit, all-zero fills, the sibling `0c45:7160` fan's complete
+message table in its wire form and its stored form, at base 0 in 8-bit and 16-bit
+addressing, and finally four candidate tables at bases `0x00`, `0x18`, `0x40` and `0x80`
+in the format taken from the vendor editor's own serializer, hedged across two addressing
+models and three EEPROM blocks, sent under both power configurations. The only reaction
+the head ever gave was timing: `A0`-headed reports occasionally take tens of milliseconds
+and once per long run block for the host's 5 s timeout, with the second byte between
+`0x18` and `0x23`. One header sweep erased the factory demo; nothing since has lit a
+single LED during rotation. Button presses do nothing. Feature reports were never sent.
+
+**What is known for certain about the family.** The vendor editor (`Vendor/`, analysed
+statically in slice 5) drives the `0x7160` sibling with `40 40` / `40 23` reports, a
+byte-sum checksum, a mandatory 3-byte acknowledgement, and a message table of rasterised
+16-bit columns. Our head answers none of that framing and shares only the vendor, the DLL
+family and the table's general shape.
+
+**What would reopen this.** The software that shipped with a `0c45:7701` fan; a USB
+capture of that software programming one; or a second unit. Nothing else that is free has
+been left untried, and this head cannot be opened for a read path.
