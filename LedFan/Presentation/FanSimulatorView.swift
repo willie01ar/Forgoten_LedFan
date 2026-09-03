@@ -6,6 +6,8 @@ import SwiftUI
 struct FanSimulatorView: View {
     let frame: POVFrame
     let accessibilityDescription: String
+    /// "scrolling" or "still", so assistive technology and tests can tell motion from rest.
+    var motionDescription: String = "still"
 
     var body: some View {
         Canvas { context, size in
@@ -38,7 +40,7 @@ struct FanSimulatorView: View {
         .background(Palette.simulatorBackground, in: .circle)
         .shadow(color: Palette.simulatorShadow, radius: Layout.shadowRadius)
         .accessibilityElement()
-        .accessibilityLabel(accessibilityDescription)
+        .accessibilityLabel(motionDescription == "scrolling" ? "\(accessibilityDescription), scrolling" : accessibilityDescription)
     }
 
     private static func band(centre: CGPoint, inner: CGFloat, outer: CGFloat) -> Path {

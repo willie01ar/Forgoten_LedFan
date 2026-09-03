@@ -1,11 +1,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var viewModel = FanMessageViewModel()
+    @State private var viewModel: FanMessageViewModel
+
+    init(viewModel: FanMessageViewModel = FanMessageViewModel()) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         VStack(spacing: Layout.loose) {
-            FanSimulatorView(frame: viewModel.previewFrame, accessibilityDescription: viewModel.previewDescription)
+            ScrollingPreview(viewModel: viewModel)
 
             controls
                 .padding(Layout.standard)
@@ -17,7 +21,7 @@ struct ContentView: View {
         }
         .padding(Layout.loose)
         .frame(minWidth: Layout.minimumWindowWidth)
-        .animation(.default, value: viewModel.previewFrame)
+        .task { await viewModel.restore() }
         .animation(.default, value: viewModel.lastError)
         .animation(.default, value: viewModel.status)
         .animation(.default, value: viewModel.transportKind)
@@ -126,6 +130,25 @@ struct ContentView: View {
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.canSend)
             .accessibilityLabel("Send the message to the fan")
+        }
+    }
+}
+
+// MARK: - Preview
+
+/// Redraws only while there is something to scroll, the window is active, and the person
+/// has not asked for reduced motion. Otherwise the static frame, and no timer at all.
+private struct ScrollingPreview: View {
+    let viewModel: FanMessageViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+
+    var body: some View {
+        let animating = viewModel.scrollingIsPossible && !reduceMotion && scenePhase == .active
+        TimelineView(.animation(minimumInterval: Motion.frameInterval, paused: !animating)) { context in
+            FanSimulatorView(frame: viewModel.previewFrame(at: animating ? context.date : nil),
+                             accessibilityDescription: viewModel.previewDescription,
+                             motionDescription: animating ? "scrolling" : "still")
         }
     }
 }

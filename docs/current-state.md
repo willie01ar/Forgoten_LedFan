@@ -1,11 +1,32 @@
 # Current state
 
-## Trust level
+## The finished app (2026-09-03)
 
-As of 2026-09-01 everything under `LedFan/` compiles in Swift 6 language mode with strict
-concurrency complete, builds without warnings, and passes 40 unit tests, 2 UI tests, and 2 hardware checklist tests that skip without the device.
-The original draft was written without a toolchain; the compiled version differs from it
-mainly in isolation annotations (see below).
+LedFan is a sandboxed macOS app, Swift 6 with strict concurrency complete, zero
+third-party dependencies, zero build warnings, 88 unit tests and 8 UI tests passing, plus
+2 hardware-checklist UI tests that skip unless a flag and the fan are present.
+
+**What it does.** You type a message into one of eight slots, up to 26 characters, and see
+it rendered as the fan would paint it: a polar preview at a fixed angular resolution, glyph
+tops at the rim, short messages centred on the top of the disc, messages longer than a
+revolution scrolling as a marquee with a dark gap before they wrap. Characters with no
+glyph are named in a caption and drawn blank. Over-length drafts are refused visibly and
+never cut. The eight drafts and the selected slot survive relaunch. The simulated fan
+stores messages per slot and confirms with a time-stamped line. The USB fan connects,
+reports itself, and states plainly that its message format is not yet known, with Send
+disabled rather than failing.
+
+**What is blocked, and why.** Sending a message to the physical fan. The head is a
+write-only HID device on the rotating hub whose stored-table format was never found: every
+free route was exhausted over twelve cable swaps, a blind sweep erased the factory demo,
+and the vendor editor that was found targets a sibling product. The app therefore never
+writes to the head (D9). This is not a software problem. What would reopen it is at the
+end of `protocol-findings.md`.
+
+**Where the hardware investigation stands.** Stalled, not closed, in the architect's
+words: it needs the software that shipped with a `0c45:7701` fan, a USB capture of it, or
+a second unit. `protocol-discovery.md` records every route and its status;
+`protocol-findings.md` is the complete log.
 
 The specification in these documents is authoritative. Where the code disagrees with the
 documents, change the code.
@@ -29,21 +50,29 @@ LedFan/
     HIDFanTransport.swift       actor over IOHIDDevice; connects, reports geometry, never writes (D9)
     SimulatedFanTransport.swift actor holding messages per slot; storedMessages stream is a test seam
     DefaultFanTransportProvider.swift  production wiring of kind -> transport
+    MessageStoring.swift        SavedDrafts + the persistence protocol; normalises malformed data
+  Persistence/
+    FileMessageStore.swift      JSON in Application Support inside the container; TransientMessageStore for previews and UI tests
   Presentation/
     FanConnectionStatus.swift   connection state enum
-    FanMessageViewModel.swift   @MainActor @Observable
-    ContentView.swift           dumb view
+    FanMessageViewModel.swift   @MainActor @Observable; slots, counter, scrolling, restore/save
+    ContentView.swift           dumb view; ScrollingPreview drives a TimelineView, paused for Reduce Motion or an inactive scene
     FanSimulatorView.swift      Canvas polar plot
+    LaunchOptions.swift         -columnsPerRevolution and -transientStore, for evidence and UI tests only
   DesignSystem/
-    Theme.swift                 Layout and Palette tokens
+    Theme.swift                 Layout, Palette and Motion tokens
 
 LedFanTests/                    Swift Testing
     MessageRasterizerTests.swift
-    FanTransportTests.swift          simulated transport, encoder, error copy
-    FanMessageViewModelTests.swift   includes a RecordingTransport mock
+    FrameComposerTests.swift         invariant, arc, offset, wrap, orientation
+    FanMessageTests.swift            slot and length validation
+    EEPROMWriterTests.swift          the known half of the encoder, and the unknown half's refusal
+    MessageStoreTests.swift          SavedDrafts normalisation, file store round trip, corrupt data
+    FanTransportTests.swift          simulated transport, hardware refusal, error copy
+    FanMessageViewModelTests.swift   RecordingTransport and RecordingMessageStore doubles; scrolling; persistence
 
 LedFanUITests/                  XCTest, because XCUIApplication requires it
-    LedFanUITests.swift              Milestone 1 flow: type, connect, send, disconnect
+    LedFanUITests.swift              Milestone 1 flow, slots, over-length refusal, scroll frame strips, candidate widths
     HardwareChecklistUITests.swift   docs/testing.md manual checklist; skipped unless LEDFAN_HARDWARE is set
 
 Tools/                          throwaway probes, outside the app target
@@ -69,16 +98,19 @@ Tools/                          throwaway probes, outside the app target
   form of Signing & Capabilities → App Sandbox → Hardware → USB. There is no
   `.entitlements` file; the signed bundle carries `com.apple.security.device.usb`.
 
-## Known problems
+## Known limits
 
-1. **The fan's stored-table format is unknown and the factory demo is erased.** See the
-   end-of-day summary in `protocol-findings.md`. `UnknownMessageTableSerializer` is the
-   placeholder; `EEPROMWriter` already frames whatever it will produce as `A0 <addr>
-   <data>` packets. Milestone 2 is paused (D6) and the app never writes to the head (D9).
-2. **`HIDFanTransport.placeholderGeometry`** (11 LEDs, 180 columns) is a guess used only
-   for the preview; the real column count is unknown.
-3. **No scroll animation yet.** `columnOffset` is a tested parameter; Milestone 3 drives it
-   from a timer.
+1. **The fan's stored-table format is unknown and the factory demo is erased.**
+   `UnknownMessageTableSerializer` is the placeholder; `EEPROMWriter` frames whatever it
+   will produce. Milestone 2 is paused (D6) and the app never writes to the head (D9).
+2. **`HIDFanTransport.placeholderGeometry`** (11 LEDs, 180 columns) is a preview guess.
+3. **At 180 columns per revolution, no message scrolls.** The longest allowed message is
+   26 characters, 156 columns at the rasterizer's 6-column pitch, which fits one revolution.
+   Scrolling is implemented, tested, and demonstrated at narrower widths through
+   `-columnsPerRevolution`; whether the shipped width should change is the architect's
+   call (D12, D14, slice 7 report).
+4. **Persistence is per user, not per fan.** Drafts live in the app's container; nothing is
+   read back from a head, because nothing can be.
 
 ## Deliberate design decisions worth preserving
 
@@ -93,3 +125,8 @@ Tools/                          throwaway probes, outside the app target
   that way. The known framing, `EEPROMWriter`, is fully tested.
 - `HIDFanTransport` is deliberately thin. It connects, reports geometry and refuses to
   store; it contains no report-writing call at all (D9).
+- Drafts are saved through `MessageStoring`, injected with a file store by default and a
+  transient store for previews and UI tests. The ViewModel never knows which.
+- Scrolling is a `TimelineView` reading a pure `previewFrame(at:)` from the ViewModel. No
+  timer object, nothing mutates on a tick, and the view pauses it for Reduce Motion, an
+  inactive scene, or a message with nothing to scroll.

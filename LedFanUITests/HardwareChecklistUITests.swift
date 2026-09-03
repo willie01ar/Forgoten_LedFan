@@ -17,6 +17,7 @@ final class HardwareChecklistUITests: XCTestCase {
     func testConnectsSendsAndDisconnectsWithTheFanAttached() throws {
         try XCTSkipUnless(hardwareState == "attached")
         let app = XCUIApplication()
+        app.launchArguments = ["-transientStore", "YES"]
         app.launch()
         selectUSBFan(in: app)
 
@@ -39,6 +40,7 @@ final class HardwareChecklistUITests: XCTestCase {
     func testReportsTheCableTrapWithTheFanAbsent() throws {
         try XCTSkipUnless(hardwareState == "absent")
         let app = XCUIApplication()
+        app.launchArguments = ["-transientStore", "YES"]
         app.launch()
         selectUSBFan(in: app)
 

@@ -11,7 +11,14 @@ A circular polar plot on a dark ground. The frame is one revolution at fixed ang
 resolution (D1): each of its columns maps to an angle, so a short message occupies a
 proportional arc centred on the top of the disc and the rest stays dark. Each lit bit
 maps to a dot at a radius between hub and tip, glyph tops at the rim so text on the
-upper arc reads upright. A faint ring marks the LED band. This is not decoration: it is
+upper arc reads upright. A faint ring marks the LED band.
+
+**Motion.** A message longer than one revolution scrolls towards the left of the top arc
+at `Motion.scrollColumnsPerSecond`, so new characters enter on the right, and wraps
+through `Motion.scrollGapColumns` of dark. Shorter messages stand still. The preview is a
+`TimelineView` reading a pure frame-for-a-date function; it pauses under Reduce Motion,
+when the scene is inactive, and when there is nothing to scroll. The accessibility label
+gains ", scrolling" while it moves. This is not decoration: it is
 the honest depiction of what a persistence-of-vision fan paints, and it makes rasterisation
 bugs visible instantly.
 
@@ -28,6 +35,7 @@ enum Layout  { tight, standard, loose, simulatorSide, simulatorHubRatio, simulat
 enum Palette { litLED, unlitLED, simulatorBackground, simulatorShadow,
                statusIdle, statusConnected, statusFailed, error,
                counterWithinLimit, counterOverLimit }
+enum Motion  { scrollColumnsPerSecond, scrollGapColumns, frameInterval }
 ```
 
 Extend these rather than introducing literals. A literal in a view body is a defect.

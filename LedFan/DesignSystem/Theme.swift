@@ -28,3 +28,13 @@ enum Palette {
     static let counterWithinLimit = Color.secondary
     static let counterOverLimit = Color.red
 }
+
+/// Scrolling, for messages longer than one revolution. Preview-only, like the geometry.
+enum Motion {
+    /// Marquee speed. One glyph is six columns, so this is five characters per second.
+    static let scrollColumnsPerSecond: Double = 30
+    /// Dark columns appended before the message wraps, so its end never touches its start.
+    static let scrollGapColumns = 18
+    /// Redraw cadence while scrolling; 30 Hz is smooth for 3 px dots and cheap.
+    static let frameInterval: TimeInterval = 1.0 / 30.0
+}

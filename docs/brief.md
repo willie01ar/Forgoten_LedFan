@@ -16,20 +16,26 @@ it to the physical fan over USB.
 
 ## What done looks like
 
-**Milestone 1 — the app is real without the hardware.**
-Type a message, watch the polar preview update live, drive the simulated transport, full
-unit test coverage of the domain. No USB required. This is achievable today.
+**Milestone 1 — the app is real without the hardware.** Done (slice 1, 2026-09-01).
+Type a message, watch the polar preview update live, store it on the simulated transport,
+full unit test coverage of the domain. No USB required.
 
-**Milestone 2 — the app talks to the fan.**
-Connect to `0x0C45:0x7701`, send frames, see the message in the air. Blocked only on the
-wire protocol (see `protocol-discovery.md`).
+**Milestone 2 — the app talks to the fan.** Paused (D6, 2026-09-02). The app connects to
+`0x0C45:0x7701`, reports the device, and refuses to write until the head's message-table
+format is known (D9). Messages are the unit of work, one per slot (D5), not frames. The
+format was not found: see `protocol-findings.md`, "The hardware path is closed", and the
+brief's own note that it is stalled rather than closed. Only outside evidence reopens it.
 
-**Milestone 3 — polish.**
-Brightness, scroll speed, message persistence, multiple saved messages.
+**Milestone 3 — finishing.** Done (slice 7, 2026-09-03). Scrolling for messages longer
+than a revolution, with Reduce Motion respected; the eight slots persist between
+launches; a legible preview at a fixed angular resolution. Brightness and scroll-speed
+controls were dropped: the preview is the only place they could act, and the fan's own
+software has neither.
 
 ## Explicitly out of scope for now
 
 - Image or animation upload. Text first.
+- Brightness and scroll-speed controls (see Milestone 3).
 - Supporting other fan models. One device, well.
 - Any DriverKit extension. The device binds to Apple's generic HID driver; if a design
   seems to need a dext, that design is wrong.

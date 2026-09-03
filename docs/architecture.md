@@ -51,6 +51,12 @@ nonisolated protocol EEPROMWriting: Sendable {
 nonisolated protocol MessageTableSerializing: Sendable {
     func bytes(for messages: [FanMessage]) throws -> [UInt8]
 }
+
+/// Where drafts live between launches. nil on load means absent or unreadable.
+nonisolated protocol MessageStoring: Sendable {
+    func load() async -> SavedDrafts?
+    func save(_ drafts: SavedDrafts) async throws
+}
 ```
 
 The domain currencies:
@@ -102,6 +108,8 @@ Initializer injection with production defaults, so views stay clean:
 init(transportProvider: any FanTransportProviding = DefaultFanTransportProvider(),
      rasterizer: any MessageRasterizing = ColumnRasterizer(),
      composer: any FrameComposing = RevolutionComposer(),
+     messageStore: any MessageStoring = FileMessageStore(),
+     previewGeometry: FanGeometry = .preview,
      transportKind: FanTransportKind = .simulated)
 ```
 
@@ -113,9 +121,10 @@ and demoable with no hardware attached. Selecting the real transport is an expli
 ```
 LedFan/
   Domain/        FanGeometry (+ColumnStrip), POVFrame, FrameComposer, FanMessage, GlyphFont,
-                 MessageRasterizer, FanDisplayTransport, FanTransportProviding
+                 MessageRasterizer, FanDisplayTransport, FanTransportProviding, MessageStoring
   Transport/     EEPROMWriter, MessageTableSerializer, HIDFanTransport, SimulatedFanTransport,
                  DefaultFanTransportProvider
+  Persistence/   FileMessageStore, TransientMessageStore
   Presentation/  FanMessageViewModel, FanConnectionStatus, ContentView, FanSimulatorView
   DesignSystem/  Layout and Palette tokens
 ```

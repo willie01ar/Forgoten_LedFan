@@ -5,39 +5,50 @@ import Observation
 @Observable
 final class FanMessageViewModel {
     var selectedSlot: Int = 0 {
-        didSet { refreshPreview() }
+        didSet { refreshPreview(); persist() }
     }
 
-    /// The draft for the selected slot. Drafts for all slots survive slot changes.
+    /// The draft for the selected slot. Drafts for all slots survive slot changes and relaunches.
     var message: String {
         get { slotTexts[selectedSlot] }
-        set { slotTexts[selectedSlot] = newValue; refreshPreview() }
+        set { slotTexts[selectedSlot] = newValue; refreshPreview(); persist() }
     }
 
     var transportKind: FanTransportKind {
         didSet { if oldValue != transportKind { replaceTransport() } }
     }
 
-    private(set) var slotTexts: [String] = ["HELLO"] + Array(repeating: "", count: FanMessage.slotCount - 1)
+    private(set) var slotTexts: [String] = SavedDrafts.empty.slotTexts
     private(set) var status: FanConnectionStatus = .disconnected
-    private(set) var previewFrame: POVFrame = .blank(geometry: .preview)
-    private(set) var geometry: FanGeometry = .preview
+    private(set) var previewFrame: POVFrame
+    private(set) var geometry: FanGeometry
     private(set) var lastError: String?
     private(set) var lastStored: String?
+    /// When the current message started scrolling; reset whenever the message changes.
+    private(set) var scrollEpoch = Date.now
 
     private let transportProvider: any FanTransportProviding
     private let rasterizer: any MessageRasterizing
     private let composer: any FrameComposing
+    private let messageStore: any MessageStoring
+    private let previewGeometry: FanGeometry
     private var transport: any FanDisplayTransport
+    private var strip: ColumnStrip = .empty(ledsPerArm: 0)
 
     init(transportProvider: any FanTransportProviding = DefaultFanTransportProvider(),
          rasterizer: any MessageRasterizing = ColumnRasterizer(),
          composer: any FrameComposing = RevolutionComposer(),
+         messageStore: any MessageStoring = FileMessageStore(),
+         previewGeometry: FanGeometry = .preview,
          transportKind: FanTransportKind = .simulated) {
         self.transportProvider = transportProvider
         self.rasterizer = rasterizer
         self.composer = composer
+        self.messageStore = messageStore
+        self.previewGeometry = previewGeometry
         self.transportKind = transportKind
+        geometry = previewGeometry
+        previewFrame = .blank(geometry: previewGeometry)
         transport = transportProvider.makeTransport(for: transportKind)
         refreshPreview()
     }
@@ -45,8 +56,10 @@ final class FanMessageViewModel {
     /// Pins one transport regardless of the selected kind. For tests and previews.
     convenience init(transport: any FanDisplayTransport,
                      rasterizer: any MessageRasterizing = ColumnRasterizer(),
-                     composer: any FrameComposing = RevolutionComposer()) {
-        self.init(transportProvider: FixedTransportProvider(transport: transport), rasterizer: rasterizer, composer: composer)
+                     composer: any FrameComposing = RevolutionComposer(),
+                     messageStore: any MessageStoring = TransientMessageStore()) {
+        self.init(transportProvider: FixedTransportProvider(transport: transport),
+                  rasterizer: rasterizer, composer: composer, messageStore: messageStore)
     }
 
     // MARK: - Derived state for the view
@@ -86,7 +99,32 @@ final class FanMessageViewModel {
         return message.isEmpty ? "Fan preview, \(slot), empty" : "Fan preview showing \(message) in \(slot)"
     }
 
+    // MARK: - Scrolling
+
+    /// Only a message longer than one revolution has anything to scroll. Shorter ones stand
+    /// still, centred on the top of the disc.
+    var scrollingIsPossible: Bool {
+        strip.columns.count > geometry.columnsPerRevolution
+    }
+
+    /// The frame to draw at `date` while scrolling, or the static frame when `date` is nil
+    /// (Reduce Motion, hidden window, or nothing to scroll). The marquee runs towards the
+    /// left of the top arc, so new characters enter on the right.
+    func previewFrame(at date: Date?) -> POVFrame {
+        guard let date, scrollingIsPossible else { return previewFrame }
+        let elapsed = max(0, date.timeIntervalSince(scrollEpoch))
+        let advance = Int((elapsed * Motion.scrollColumnsPerSecond).rounded())
+        return composer.frame(from: scrollableStrip, geometry: geometry, columnOffset: -advance)
+    }
+
     // MARK: - Lifecycle
+
+    /// Loads the saved drafts. Absent or unreadable data leaves every slot empty.
+    func restore() async {
+        guard let saved = await messageStore.load() else { return }
+        slotTexts = saved.slotTexts
+        selectedSlot = saved.selectedSlot
+    }
 
     func connect() async {
         status = .connecting
@@ -122,12 +160,25 @@ final class FanMessageViewModel {
 
     // MARK: - Helpers
 
-    /// Short messages are centred on the top of the disc; longer ones start there and wrap.
+    /// Short messages are centred on the top of the disc; longer ones start there and scroll.
     private func refreshPreview() {
-        let strip = rasterizer.strip(for: message, ledsPerArm: geometry.ledsPerArm)
-        let fitsOneRevolution = strip.columns.count <= geometry.columnsPerRevolution
-        let offset = fitsOneRevolution ? -(strip.columns.count / 2) : 0
+        strip = rasterizer.strip(for: message, ledsPerArm: geometry.ledsPerArm)
+        let offset = scrollingIsPossible ? 0 : -(strip.columns.count / 2)
         previewFrame = composer.frame(from: strip, geometry: geometry, columnOffset: offset)
+        scrollEpoch = .now
+    }
+
+    /// The strip with a dark gap after it, so a wrapped message never touches its own start.
+    private var scrollableStrip: ColumnStrip {
+        ColumnStrip(ledsPerArm: strip.ledsPerArm,
+                    columns: strip.columns + [UInt16](repeating: 0, count: Motion.scrollGapColumns))
+    }
+
+    private func persist() {
+        let snapshot = SavedDrafts(slotTexts: slotTexts, selectedSlot: selectedSlot)
+        Task {
+            do { try await messageStore.save(snapshot) } catch { lastError = error.localizedDescription }
+        }
     }
 
     private func replaceTransport() {
@@ -136,7 +187,7 @@ final class FanMessageViewModel {
         status = .disconnected
         lastError = nil
         lastStored = nil
-        geometry = .preview
+        geometry = previewGeometry
         refreshPreview()
         Task { await previous.disconnect() }
     }

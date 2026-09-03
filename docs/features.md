@@ -20,8 +20,13 @@ Type a message and see, immediately, what the fan would paint.
 - [x] A 26-character message renders as recognisable text (D1; screenshots in
       `reports/images/2026-09-02-*`).
 - [x] A short message occupies a proportional arc centred on the top; the remainder is dark.
-- [x] `columnOffset` shifts the message around the disc (proven by `FrameComposerTests`; no
-      scroll animation yet).
+- [x] `columnOffset` shifts the message around the disc (proven by `FrameComposerTests`).
+- [x] A message longer than one revolution scrolls as a marquee and wraps through a dark gap,
+      never a seam (`reports/images/2026-09-03-scroll-strip-*.png`).
+- [x] A message that fits one revolution stands still, centred on the top. There is nothing
+      to scroll, and a still frame is easier to judge.
+- [x] Reduce Motion stops the scroll and shows the static frame. The redraw also pauses
+      when the scene is inactive or the message is empty.
 
 ---
 
@@ -102,7 +107,22 @@ The app must be fully usable and demoable with no hardware attached.
 - [x] The unknown half, `MessageTableSerializing`, has exactly one conformance, which
       throws `.protocolNotYetKnown`, and is the only place in the app that admits the
       protocol is unknown.
-- [ ] A message stored on the hardware appears on the blades. Blocked on the table format.
+- [ ] A message stored on the hardware appears on the blades. Blocked: the head's
+      message-table format was never found, and no software can supply it.
+
+---
+
+## F8 — Drafts survive relaunch
+
+`MessageStoring`, injected; `FileMessageStore` in the sandbox container by default.
+
+**Acceptance**
+- [x] All eight slots and the selected slot survive relaunch (`FileMessageStore` round trip
+      and `restore()` tests).
+- [x] The ViewModel does not know what is behind the protocol; a recording double proves
+      saves and restores without touching the disk.
+- [x] Corrupt or absent stored data yields empty slots, never a crash.
+- [x] No new dependencies; JSON via Foundation.
 
 ---
 
@@ -116,6 +136,6 @@ The app must be fully usable and demoable with no hardware attached.
 
 ---
 
-## Deferred
+## Not planned
 
-Scroll animation (Milestone 3: a timer driving `columnOffset`); brightness; message persistence; image upload.
+Brightness and scroll-speed controls; image upload; other fan models. See `brief.md`.

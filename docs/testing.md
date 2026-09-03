@@ -48,6 +48,19 @@ reports, and disconnects.
 ### Message table serializer (the unknown half)
 - The single conformance throws `.protocolNotYetKnown`.
 
+### Scrolling — pure, so test it hard
+- A message that fits one revolution never scrolls; an empty one never scrolls.
+- A longer message advances `Motion.scrollColumnsPerSecond` columns per second, wraps
+  through the gap, and returns to its start after one full period.
+- A nil date yields the static frame (Reduce Motion, inactive scene).
+
+### Persistence
+- `SavedDrafts` pads, trims and clamps anything malformed, including when decoding.
+- `FileMessageStore`: absent data is nil, corrupt data is nil, saves round-trip and
+  overwrite, all in a temporary directory.
+- The ViewModel restores every slot and the selection, saves every edit, and surfaces a
+  failed save as an error, all against a recording double that never touches the disk.
+
 ### Transports
 - `store(_:)` before `connect()` throws `.notConnected`.
 - `connect()` then `store(_:)` succeeds and is retained per slot.
@@ -71,6 +84,13 @@ messages and can be configured to fail on connect, fail on store, or refuse to s
 - A failing `connect()` leaves status non-connected and surfaces the reason.
 - A transport that cannot store disables Send and exposes its reason.
 - Tests are `@MainActor` because the ViewModel is.
+
+## UI tests
+
+Every launch passes `-transientStore YES`, so the tests never read or write the real
+container. Scrolling evidence is captured at `-columnsPerRevolution 120`, because at the
+shipped 180 no message is longer than a revolution; the frames are composited into
+`reports/images/2026-09-03-scroll-strip-*.png`.
 
 ## Manual hardware checklist
 

@@ -30,7 +30,7 @@ status the owner had already acted on, and the developer correctly refused to re
 history to satisfy it. A brief should state the check, not its stale result.)*
 
 **Acceptance**
-- [ ] `git status --porcelain` is empty before any code is written.
+- [x] `git status --porcelain` is empty before any code is written.
 
 ---
 
@@ -40,17 +40,17 @@ history to satisfy it. A brief should state the check, not its stale result.)*
 already unit tested. Scrolling is a timer advancing that integer, not new geometry.
 
 **Acceptance**
-- [ ] A message longer than one revolution scrolls smoothly and wraps without a visible seam.
-- [ ] A message shorter than one revolution does not scroll by default — there is nothing to
+- [x] A message longer than one revolution scrolls smoothly and wraps without a visible seam.
+- [x] A message shorter than one revolution does not scroll by default — there is nothing to
       scroll. Decide and document what a short message does; standing still is a legitimate
       answer.
-- [ ] Speed is a named constant in the design system, not a literal in a view.
-- [ ] **Respect Reduce Motion.** `accessibilityReduceMotion` must stop the animation and
+- [x] Speed is a named constant in the design system, not a literal in a view.
+- [x] **Respect Reduce Motion.** `accessibilityReduceMotion` must stop the animation and
       show a static frame. A spinning ring of text is exactly the kind of motion that
       setting exists for.
-- [ ] The timer stops when the window is not visible and when the message is empty. No
+- [x] The timer stops when the window is not visible and when the message is empty. No
       burning a core to animate nothing.
-- [ ] Driven by the Observation framework and `.animation(_:value:)` or `TimelineView` —
+- [x] Driven by the Observation framework and `.animation(_:value:)` or `TimelineView` —
       not a `Timer` mutating state on a background queue, and not `DispatchQueue`.
 
 ---
@@ -62,9 +62,9 @@ window changes the trade between letter size and dark arc. D14 then ruled out ad
 sibling's 142.
 
 **Acceptance**
-- [ ] A recommendation to the architect, with screenshots at two or three candidate values,
+- [x] A recommendation to the architect, with screenshots at two or three candidate values,
       on whether 180 is still right now that long messages scroll.
-- [ ] Do not change the value unilaterally — D12 and D14 are architect decisions. Report.
+- [x] Do not change the value unilaterally — D12 and D14 are architect decisions. Report.
 
 ---
 
@@ -73,13 +73,13 @@ sibling's 142.
 Per-slot drafts currently live only in memory.
 
 **Acceptance**
-- [ ] All eight slots survive relaunch, including which slot was selected.
-- [ ] Behind a protocol, injected with a production default, per the standing DI rule. The
+- [x] All eight slots survive relaunch, including which slot was selected.
+- [x] Behind a protocol, injected with a production default, per the standing DI rule. The
       ViewModel must not know whether it is talking to a file, `UserDefaults`, or a test
       double.
-- [ ] A test double proves the ViewModel saves and restores without touching the disk.
-- [ ] Corrupt or absent stored data yields empty slots, never a crash and never a trap.
-- [ ] The app is sandboxed — write inside the container. No new dependencies.
+- [x] A test double proves the ViewModel saves and restores without touching the disk.
+- [x] Corrupt or absent stored data yields empty slots, never a crash and never a trap.
+- [x] The app is sandboxed — write inside the container. No new dependencies.
 
 ---
 
@@ -89,7 +89,7 @@ D4 said `GlyphFont.supportedCharacters` was kept for one slice on condition it e
 place as an unsupported-character hint, and slice 4 reported shipping that caption.
 
 **Acceptance**
-- [ ] Confirm the hint exists and works, or delete the property. Either outcome closes D4 —
+- [x] Confirm the hint exists and works, or delete the property. Either outcome closes D4 —
       state which in the report.
 
 ---
@@ -97,13 +97,13 @@ place as an unsupported-character hint, and slice 4 reported shipping that capti
 ## Task 6 — Leave it finished
 
 **Acceptance**
-- [ ] `docs/current-state.md` describes the finished app, not a draft: what works, what is
+- [x] `docs/current-state.md` describes the finished app, not a draft: what works, what is
       blocked and why, and where the hardware investigation stands.
-- [ ] `docs/brief.md` Milestones updated — including the stale "send frames" wording, which
+- [x] `docs/brief.md` Milestones updated — including the stale "send frames" wording, which
       D5 superseded with messages in slots.
-- [ ] `features.md` boxes ticked only where demonstrable. The F5 box that needs a message on
+- [x] `features.md` boxes ticked only where demonstrable. The F5 box that needs a message on
       the blades stays open, and should say why in one line.
-- [ ] `README.md` reading order still makes sense for someone arriving cold.
+- [x] `README.md` reading order still makes sense for someone arriving cold.
 
 ---
 

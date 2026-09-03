@@ -54,14 +54,44 @@ struct RecordingTransportProvider: FanTransportProviding {
     }
 }
 
+/// A store that never touches the disk and remembers every save.
+actor RecordingMessageStore: MessageStoring {
+    private(set) var saves: [SavedDrafts] = []
+    private let stored: SavedDrafts?
+    private let saveShouldFail: Bool
+
+    init(stored: SavedDrafts? = nil, saveShouldFail: Bool = false) {
+        self.stored = stored
+        self.saveShouldFail = saveShouldFail
+    }
+
+    func load() async -> SavedDrafts? { stored }
+
+    func save(_ drafts: SavedDrafts) async throws {
+        if saveShouldFail { throw CocoaError(.fileWriteNoPermission) }
+        saves.append(drafts)
+    }
+}
+
 @MainActor
 struct FanMessageViewModelTests {
     private let twentySix = "THE QUICK BROWN FOX JUMPS!"
+    private let narrow = FanGeometry(ledsPerArm: 11, columnsPerRevolution: 60)
+
+    private func viewModel(store: any MessageStoring = TransientMessageStore(),
+                           transport: RecordingTransport = RecordingTransport()) -> FanMessageViewModel {
+        FanMessageViewModel(transport: transport, messageStore: store)
+    }
+
+    private func providerViewModel(_ provider: RecordingTransportProvider,
+                                   kind: FanTransportKind = .simulated) -> FanMessageViewModel {
+        FanMessageViewModel(transportProvider: provider, messageStore: TransientMessageStore(), transportKind: kind)
+    }
 
     // MARK: - Preview
 
     @Test func editingTheMessageRefreshesThePreview() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
+        let viewModel = viewModel()
         let before = viewModel.previewFrame
 
         viewModel.message = "DIFFERENT"
@@ -71,31 +101,129 @@ struct FanMessageViewModelTests {
     }
 
     @Test func thePreviewCentresAShortMessageOnTheTopOfTheDisc() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
+        let viewModel = viewModel()
         viewModel.message = "HELLO"
         let strip = ColumnRasterizer().strip(for: "HELLO", ledsPerArm: 11)
         let expected = RevolutionComposer().frame(from: strip, geometry: .preview, columnOffset: -(strip.columns.count / 2))
         #expect(viewModel.previewFrame == expected)
     }
 
-    @Test func clearingTheMessageProducesABlankPreview() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
-        viewModel.message = ""
+    @Test func slotsStartEmptyUntilRestored() {
+        let viewModel = viewModel()
+        #expect(viewModel.message.isEmpty)
         #expect(viewModel.previewFrame.isBlank)
         #expect(viewModel.previewDescription == "Fan preview, slot 1, empty")
     }
 
     @Test func thePreviewDescriptionNamesTheMessageAndSlot() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
+        let viewModel = viewModel()
         viewModel.selectedSlot = 2
         viewModel.message = "HI"
         #expect(viewModel.previewDescription == "Fan preview showing HI in slot 3")
     }
 
+    // MARK: - Scrolling
+
+    @Test func aMessageThatFitsOneRevolutionDoesNotScroll() {
+        let viewModel = viewModel()
+        viewModel.message = twentySix          // 156 columns < 180
+        #expect(!viewModel.scrollingIsPossible)
+        #expect(viewModel.previewFrame(at: .now.addingTimeInterval(5)) == viewModel.previewFrame)
+    }
+
+    @Test func anEmptyMessageNeverScrolls() {
+        let viewModel = FanMessageViewModel(transport: RecordingTransport(geometry: narrow), messageStore: TransientMessageStore())
+        viewModel.message = ""
+        #expect(!viewModel.scrollingIsPossible)
+        #expect(viewModel.previewFrame(at: .now).isBlank)
+    }
+
+    @Test func aMessageLongerThanARevolutionScrollsAtTheDesignSystemSpeed() async {
+        let viewModel = FanMessageViewModel(transport: RecordingTransport(geometry: narrow), messageStore: TransientMessageStore())
+        await viewModel.connect()                       // adopts the 60-column geometry
+        viewModel.message = twentySix                   // 156 columns > 60
+        #expect(viewModel.scrollingIsPossible)
+
+        let strip = ColumnRasterizer().strip(for: twentySix, ledsPerArm: 11)
+        let padded = ColumnStrip(ledsPerArm: 11, columns: strip.columns + [UInt16](repeating: 0, count: Motion.scrollGapColumns))
+        let later = viewModel.scrollEpoch.addingTimeInterval(2)
+        let expectedAdvance = Int(2 * Motion.scrollColumnsPerSecond)
+        let expected = RevolutionComposer().frame(from: padded, geometry: narrow, columnOffset: -expectedAdvance)
+
+        #expect(viewModel.previewFrame(at: later) == expected)
+        #expect(viewModel.previewFrame(at: viewModel.scrollEpoch) == viewModel.previewFrame, "at the epoch the scrolled frame is the static one")
+        #expect(viewModel.previewFrame(at: nil) == viewModel.previewFrame, "nil date means the static frame")
+    }
+
+    @Test func aScrollingMessageWrapsThroughAGapNotASeam() async {
+        let viewModel = FanMessageViewModel(transport: RecordingTransport(geometry: narrow), messageStore: TransientMessageStore())
+        await viewModel.connect()
+        viewModel.message = twentySix
+        let strip = ColumnRasterizer().strip(for: twentySix, ledsPerArm: 11)
+        let period = Double(strip.columns.count + Motion.scrollGapColumns) / Motion.scrollColumnsPerSecond
+
+        let onePeriodLater = viewModel.previewFrame(at: viewModel.scrollEpoch.addingTimeInterval(period))
+        #expect(onePeriodLater == viewModel.previewFrame, "after one full period the marquee is back at the start")
+
+        // Just before the message's tail leaves, the gap is dark where the head would otherwise touch it.
+        let advance = strip.columns.count
+        let frame = viewModel.previewFrame(at: viewModel.scrollEpoch.addingTimeInterval(Double(advance) / Motion.scrollColumnsPerSecond))
+        #expect(frame.columns[0..<Motion.scrollGapColumns].allSatisfy { $0 == 0 })
+    }
+
+    @Test func editingRestartsTheScrollFromTheBeginning() {
+        let viewModel = viewModel()
+        let before = viewModel.scrollEpoch
+        viewModel.message = "NEW"
+        #expect(viewModel.scrollEpoch >= before)
+    }
+
+    // MARK: - Persistence
+
+    @Test func restoringLoadsEveryDraftAndTheSelectedSlot() async {
+        let saved = SavedDrafts(slotTexts: ["ONE", "TWO", "", "", "", "", "", "EIGHT"], selectedSlot: 7)
+        let viewModel = viewModel(store: RecordingMessageStore(stored: saved))
+
+        await viewModel.restore()
+
+        #expect(viewModel.slotTexts == saved.slotTexts)
+        #expect(viewModel.selectedSlot == 7)
+        #expect(viewModel.message == "EIGHT")
+        #expect(viewModel.previewDescription == "Fan preview showing EIGHT in slot 8")
+    }
+
+    @Test func restoringWithNothingSavedLeavesEverySlotEmpty() async {
+        let viewModel = viewModel(store: RecordingMessageStore(stored: nil))
+        await viewModel.restore()
+        #expect(viewModel.slotTexts == SavedDrafts.empty.slotTexts)
+        #expect(viewModel.selectedSlot == 0)
+    }
+
+    @Test func everyEditAndSlotChangeIsSaved() async {
+        let store = RecordingMessageStore()
+        let viewModel = viewModel(store: store)
+
+        viewModel.message = "A"
+        viewModel.selectedSlot = 3
+        viewModel.message = "D"
+        await waitUntil { await store.saves.count >= 3 }
+
+        let last = await store.saves.last
+        #expect(last == SavedDrafts(slotTexts: ["A", "", "", "D", "", "", "", ""], selectedSlot: 3))
+    }
+
+    @Test func aFailedSaveSurfacesAsAnErrorNotACrash() async {
+        let viewModel = viewModel(store: RecordingMessageStore(saveShouldFail: true))
+        viewModel.message = "A"
+        await waitUntil { viewModel.lastError != nil }
+        #expect(viewModel.lastError?.isEmpty == false)
+        #expect(viewModel.message == "A", "the draft is kept even when saving fails")
+    }
+
     // MARK: - Slots and limits
 
     @Test func eachSlotKeepsItsOwnDraft() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
+        let viewModel = viewModel()
         viewModel.message = "FIRST"
         viewModel.selectedSlot = 1
         #expect(viewModel.message.isEmpty)
@@ -108,7 +236,7 @@ struct FanMessageViewModelTests {
     }
 
     @Test func theCounterTracksTheLimit() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
+        let viewModel = viewModel()
         viewModel.message = twentySix
         #expect(viewModel.counterText == "26/26")
         #expect(viewModel.messageFitsTheFan)
@@ -122,7 +250,7 @@ struct FanMessageViewModelTests {
 
     @Test func anOverLengthDraftIsRefusedNotTruncated() async {
         let transport = RecordingTransport()
-        let viewModel = FanMessageViewModel(transport: transport)
+        let viewModel = viewModel(transport: transport)
         await viewModel.connect()
         viewModel.message = twentySix + "?"
 
@@ -134,7 +262,7 @@ struct FanMessageViewModelTests {
     }
 
     @Test func blankGlyphsAreNamedOnce() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
+        let viewModel = viewModel()
         viewModel.message = "HÉLLO 🙂🙂"
         #expect(viewModel.blankGlyphHint == "No glyph for “É”, “🙂”. Shown blank.")
         viewModel.message = "HELLO"
@@ -145,7 +273,8 @@ struct FanMessageViewModelTests {
 
     @Test func sendingIsBlockedUntilConnected() async {
         let transport = RecordingTransport()
-        let viewModel = FanMessageViewModel(transport: transport)
+        let viewModel = viewModel(transport: transport)
+        viewModel.message = "HI"
 
         await viewModel.sendMessage()
 
@@ -155,7 +284,7 @@ struct FanMessageViewModelTests {
 
     @Test func connectingThenSendingStoresTheSelectedSlot() async throws {
         let transport = RecordingTransport()
-        let viewModel = FanMessageViewModel(transport: transport)
+        let viewModel = viewModel(transport: transport)
         viewModel.selectedSlot = 4
         viewModel.message = "FIVE"
 
@@ -169,7 +298,7 @@ struct FanMessageViewModelTests {
 
     @Test func connectingAdoptsTheTransportGeometry() async {
         let geometry = FanGeometry(ledsPerArm: 7, columnsPerRevolution: 90)
-        let viewModel = FanMessageViewModel(transport: RecordingTransport(geometry: geometry))
+        let viewModel = viewModel(transport: RecordingTransport(geometry: geometry))
 
         await viewModel.connect()
 
@@ -179,7 +308,7 @@ struct FanMessageViewModelTests {
     }
 
     @Test func aFailedConnectionSurfacesTheReason() async {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport(connectShouldFail: true))
+        let viewModel = viewModel(transport: RecordingTransport(connectShouldFail: true))
 
         await viewModel.connect()
 
@@ -189,7 +318,8 @@ struct FanMessageViewModelTests {
     }
 
     @Test func aFailedStoreSurfacesTheReasonAndStaysConnected() async {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport(storeShouldFail: true))
+        let viewModel = viewModel(transport: RecordingTransport(storeShouldFail: true))
+        viewModel.message = "HI"
 
         await viewModel.connect()
         await viewModel.sendMessage()
@@ -201,7 +331,7 @@ struct FanMessageViewModelTests {
 
     @Test func aTransportThatCannotStoreDisablesSendAndExplainsWhy() async {
         let transport = RecordingTransport(storeAvailability: .unavailable(reason: "Not yet."))
-        let viewModel = FanMessageViewModel(transport: transport)
+        let viewModel = viewModel(transport: transport)
 
         await viewModel.connect()
 
@@ -213,7 +343,7 @@ struct FanMessageViewModelTests {
     }
 
     @Test func disconnectingReturnsToDisconnected() async {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
+        let viewModel = viewModel()
 
         await viewModel.connect()
         await viewModel.disconnect()
@@ -223,21 +353,20 @@ struct FanMessageViewModelTests {
     }
 
     @Test func transportNameIsExposedForTheUI() {
-        let viewModel = FanMessageViewModel(transport: RecordingTransport())
-        #expect(viewModel.transportName == "Recording")
+        #expect(viewModel().transportName == "Recording")
     }
 
     // MARK: - Transport selection
 
     @Test func theSimulatedTransportIsTheDefault() {
-        let viewModel = FanMessageViewModel(transportProvider: RecordingTransportProvider())
+        let viewModel = providerViewModel(RecordingTransportProvider())
         #expect(viewModel.transportKind == .simulated)
         #expect(viewModel.storeUnavailableReason == nil)
     }
 
     @Test func switchingKindDisconnectsThePreviousTransportAndResetsState() async {
         let provider = RecordingTransportProvider()
-        let viewModel = FanMessageViewModel(transportProvider: provider, transportKind: .hardware)
+        let viewModel = providerViewModel(provider, kind: .hardware)
         await viewModel.connect()
         #expect(viewModel.previewFrame.geometry.ledsPerArm == 7)
 
@@ -253,7 +382,7 @@ struct FanMessageViewModelTests {
 
     @Test func connectingAfterSwitchingUsesTheNewTransport() async {
         let provider = RecordingTransportProvider()
-        let viewModel = FanMessageViewModel(transportProvider: provider)
+        let viewModel = providerViewModel(provider)
 
         viewModel.transportKind = .simulated
         await viewModel.connect()
@@ -266,7 +395,7 @@ struct FanMessageViewModelTests {
 
     @Test func selectingTheSameKindAgainKeepsTheConnection() async {
         let provider = RecordingTransportProvider()
-        let viewModel = FanMessageViewModel(transportProvider: provider)
+        let viewModel = providerViewModel(provider)
         await viewModel.connect()
 
         viewModel.transportKind = .simulated
@@ -277,7 +406,7 @@ struct FanMessageViewModelTests {
 
     @Test func theHardwareKindExplainsThatItCannotStoreAndSendStaysOff() async {
         let provider = RecordingTransportProvider()
-        let viewModel = FanMessageViewModel(transportProvider: provider)
+        let viewModel = providerViewModel(provider)
         viewModel.transportKind = .hardware
         await viewModel.connect()
 
@@ -288,7 +417,7 @@ struct FanMessageViewModelTests {
 
     @Test func aPinnedTransportIgnoresTheKind() async {
         let transport = RecordingTransport()
-        let viewModel = FanMessageViewModel(transport: transport)
+        let viewModel = viewModel(transport: transport)
         await viewModel.connect()
 
         viewModel.transportKind = .hardware
@@ -300,9 +429,9 @@ struct FanMessageViewModelTests {
 
     // MARK: - Helpers
 
-    /// The ViewModel disconnects a replaced transport in a detached task; give it a few turns.
+    /// Saves and the replaced transport's disconnect run in detached tasks; give them a few turns.
     private func waitUntil(_ condition: () async -> Bool) async {
-        for _ in 0..<200 where await !condition() {
+        for _ in 0..<500 where await !condition() {
             await Task.yield()
         }
     }

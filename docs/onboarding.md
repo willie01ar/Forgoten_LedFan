@@ -15,24 +15,19 @@ Read this page, then `brief.md`, then the rest in the order `README.md` lists.
 
 ## Where things stand
 
-The app under `LedFan/` builds warning-free in Swift 6 with strict concurrency, the unit
-suites and the UI test pass, and Milestone 1 is demonstrated (2026-09-01). See
-`current-state.md` for the inventory and `features.md` for which acceptance boxes are
-ticked.
+Finished, as of 2026-09-03. Read `current-state.md` first: it says what the app does,
+what is blocked and why, and where the hardware investigation stands. The hardware
+chapter is stalled on evidence that has to come from outside the repository.
 
-`Tools/HIDFan/hidfan.swift` has still never been compiled. Treat it as a draft.
+## If you pick this up
 
-## Next tasks, in order
-
-1. **Read the end-of-day summary in `protocol-findings.md` before touching the fan.** The
-   factory demo has been erased by probing; the head is dark until a valid table is
-   written. The table format is unknown and is not the sibling fans' format.
-2. **Route 1 is the only cheap route left:** the software that shipped with a
-   `0c45:7701` fan. Nothing else found online applies to this product ID.
-3. Blind probing costs the owner one cable swap per observation (the data port is on the
-   rotating head). Batch experiments; do not spend swaps on single packets.
-4. Feature-report writes need the owner's explicit consent. Not given as of 2026-09-01.
-5. Milestone 3 polish only after the fan shows a message.
+1. Build and run the tests (commands below). Everything should be green with no warnings.
+2. Read `decisions.md`. Every design choice that is not obvious from the code is there.
+3. Do not touch the fan without reading `hardware.md` and the end of
+   `protocol-findings.md`. Twelve cable swaps and an erased factory demo are recorded there,
+   and the app deliberately never writes to the head (D9).
+4. If new evidence about the message-table format arrives, the only type that changes is
+   `UnknownMessageTableSerializer` (D8, D13).
 
 ## Commands
 
