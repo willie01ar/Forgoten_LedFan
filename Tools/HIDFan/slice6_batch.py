@@ -74,7 +74,20 @@ for (base, name, sig, body) in candidates:
 
 if "--send" in sys.argv:
     import hid
-    d = hid.device(); d.open(0x0C45, 0x7701)
+    # Two rival PyPI packages both provide a module named "hid": "hidapi" exposes
+    # hid.device()/open(), "hid" exposes hid.Device(vid, pid). Support both.
+    if hasattr(hid, "device"):
+        d = hid.device(); d.open(0x0C45, 0x7701)
+    else:
+        _dev = hid.Device(0x0C45, 0x7701)
+        class _Shim:
+            def write(self, b):
+                try:
+                    _dev.write(bytes(b)); return len(b)
+                except Exception as e:
+                    self._err = str(e); return -1
+            def error(self): return getattr(self, "_err", "unknown")
+        d = _Shim()
     fails = 0; slow = 0; t0 = time.time()
     for i, p in enumerate(packets):
         t = time.time(); n = d.write(bytes([0x00] + p)); dt = (time.time() - t) * 1000

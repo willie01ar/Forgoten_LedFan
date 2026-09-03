@@ -1,5 +1,45 @@
 # Protocol discovery
 
+**CLOSED 2026-09-03, and this time the state space is exhausted.**
+The last untested configuration — both cables connected with the fan switched ON — was
+tried and eliminated. It enumerates, a tip LED lights steady blue, 233 packets went in with
+no failures and no write-cycle timing, the LED never reacted, and the disc stayed dark.
+Details in `protocol-findings.md`, "The powered state: tested and eliminated".
+
+Every reachable combination of framing, table format, address base, addressing model and
+power state has now been tried. **No further experiment is worth the owner's time.**
+
+What remains is a search, not a test: the "USB Fan Version 3.0" editor, or a USB capture of
+one programming a `0x7701` fan. Leads B and C below are stalled on reachability, not on
+ideas. If either ever lands, the app is one `MessageTableSerializing` conformance away from
+working — that seam is built and tested.
+
+---
+
+**Superseded — the reopening that led to the final test.**
+The owner connected the power cable AND the data cable AND **switched the fan on**. Result:
+the first LED at the blade tip lights bright blue and steady; the motor does not turn.
+
+**This configuration had never been tried.** Slice 6's second send came closest — both
+cables — but with the switch OFF. The reason nobody tried it is that the vendor manual says
+"Make sure your fan is OFF. To connect the computer to download the file", and every session
+inherited that instruction as a rule. It was written for a generation-2 fan.
+
+**Why it may matter.** Every write in this project went to a head on bus power or unswitched
+power. EEPROM write cycles are the current-hungry part of that chip's operation. If the
+write path sits on the switched rail, every packet was accepted by the bridge and never
+committed — which would explain every negative result at once: no errors, plausible
+timings, nothing stored.
+
+**And it may be the live oracle.** With both cables attached and the fan powered, the LEDs
+can be watched WHILE packets are sent. No cable swap. If that holds, the economics that
+made this project expensive are gone.
+
+Caution recorded: if the motor is commanded but blocked, a stalled coil heats. Check the hub
+is cool before leaving it in this state.
+
+---
+
 **REOPENED 2026-09-02**, hours after being closed. The closure was premature: a
 review found leads that had never been tried. Do not treat the hardware path as closed
 while anything in "Reopened leads" below is outstanding.

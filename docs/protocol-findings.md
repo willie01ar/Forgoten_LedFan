@@ -865,3 +865,40 @@ reframes the search: the target is not "the software for our fan" but "the USB F
 3.0 editor".
 
 Appnee's tag page returns 403 to automated fetching; a person can browse it.
+
+---
+
+## 2026-09-03 — The powered state: tested and eliminated
+
+The last untested configuration. Power cable **and** data cable connected **and the fan
+switched on** — a state nobody had entered, because the vendor manual says "Make sure your
+fan is OFF" and every session inherited that instruction. It was written for a
+generation-2 fan.
+
+**Observations**
+- The head enumerates normally in this state (`ioreg`: SONiX, `kUSBAddress = 4`, interface
+  matched and active).
+- The first LED at the blade tip lights bright blue and **steady** — not blinking, not
+  pulsing, not multiplexing. The motor does not turn.
+- The slice-6 batch was re-sent in this state: 233 packets, **fails=0, slow=0**, 4.0 s.
+- **The LED did not change at any point** during or after the send.
+- Power-cycled to display mode afterwards: **disc dark.**
+
+**What it eliminates**
+1. *The LED is not an activity indicator.* 233 writes passed under it without a flicker. It
+   is a static "powered, not spinning" light.
+2. *The switched-power hypothesis is unsupported.* The idea was that EEPROM writes might
+   need the fan's own power rail, and that every previous write was accepted by the bridge
+   but never committed. If so, page-write cycles should have appeared as tens-of-milliseconds
+   writes. Timings were uniformly fast and identical to every unpowered session — no write
+   cycles, in either state.
+3. *All four candidate tables, at four bases, are eliminated in the powered state as well as
+   the unpowered one.*
+
+**Conclusion.** There is no configuration of cables and power in which this head accepts a
+generation-2 message table. The hardware experimentation is complete: every reachable
+combination of framing, table format, address base, addressing model and power state has
+been tried.
+
+**What remains is not experimental.** Only the "USB Fan Version 3.0" editor — or a USB
+capture of one programming a `0x7701` fan — can move this now. That is a search, not a test.
