@@ -93,22 +93,27 @@ The app must be fully usable and demoable with no hardware attached.
 
 ## F5 — Sending to hardware
 
-**Paused with Milestone 2 (D6). The app never writes to the head (D9).**
+**Milestone 2 stays paused (D6), but the writer is real (D16, supersedes D9).**
 
 **Acceptance**
 - [x] Send is disabled unless connected.
-- [x] Send is disabled — not enabled-then-failing — when the hardware transport is
-      selected, and the UI states plainly that the fan's message format is not yet known.
-- [x] The copy does not imply a fault in the user's setup.
-- [x] No code path in the app target can emit a packet to the device: there is no
-      `IOHIDDeviceSetReport` call in the target.
-- [x] The known half of the encoder, `EEPROMWriting`, is unit tested: 8-byte packets, `A0`
-      header, address increment, zero padding, packet counts, the 0x18–0x23 stall range.
-- [x] The unknown half, `MessageTableSerializing`, has exactly one conformance, which
-      throws `.protocolNotYetKnown`, and is the only place in the app that admits the
-      protocol is unknown.
-- [ ] A message stored on the hardware appears on the blades. Blocked: the head's
-      message-table format was never found, and no software can supply it.
+- [x] Selecting the hardware transport states plainly that the implemented message format
+      belongs to a different generation of fan and that nothing is expected on the blades.
+- [x] The copy does not imply a fault in the user's setup, and a unit test asserts it
+      contains no unqualified success language.
+- [x] `GenerationTwoTableSerializer` implements the `0c45:7160` family's table byte for byte
+      against the Slice 5 findings: count byte, `columns+2`, effect packing, characters last
+      to first, little-endian columns, trailing zeros, the 2 KB ceiling refused rather than
+      truncated. Pure, `nonisolated`, rasterising through the injected rasterizer.
+- [x] `EEPROMWriting` frames the whole 2 KB store: eight blocks, `A0`…`AE` headers, no
+      packet across a block boundary.
+- [x] `HIDFanTransport.store(_:)` sends, treats the head's silence as normal, counts a
+      5-second hold without failing, writes every send's packet stream to a file in the
+      container, and returns a receipt that says what happened.
+- [x] The seam holds: a trivial test-only serializer runs through the same writer unchanged.
+- [ ] A message stored on the hardware appears on the blades. The writer exists and works;
+      the format it writes is the wrong generation for this head, and the right one was
+      never found.
 
 ---
 

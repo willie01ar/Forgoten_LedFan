@@ -5,7 +5,7 @@ import Testing
 struct EEPROMWriterTests {
     private let writer = EEPROMWriter()
 
-    @Test func everyPacketIsEightBytesAndStartsWithTheWriteHeader() {
+    @Test func everyPacketIsEightBytesAndStartsWithTheBlockZeroHeader() {
         let packets = writer.packets(writing: Array(0..<40), toAddress: 0)
         #expect(!packets.isEmpty)
         #expect(packets.allSatisfy { $0.count == EEPROMWriter.reportSize })
@@ -31,30 +31,34 @@ struct EEPROMWriterTests {
         #expect(writer.packets(writing: payload, toAddress: 0).count == 5)
     }
 
-    @Test func aTwentySixCharacterColumnPayloadNeedsTwentySixPackets() {
-        // 26 characters x 6 columns x 1 byte, if the table turned out to be column bytes.
-        #expect(writer.packets(writing: [UInt8](repeating: 0, count: 156), toAddress: 0).count == 26)
-    }
-
     @Test func nothingToWriteProducesNoPackets() {
         #expect(writer.packets(writing: [], toAddress: 0x40).isEmpty)
     }
 
-    @Test func theAddressWrapsAtTheEndOfAnEightBitSpace() {
-        let packets = writer.packets(writing: Array(repeating: 1, count: 12), toAddress: 0xFC)
-        #expect(packets.map { $0[1] } == [0xFC, 0x02])
+    // MARK: - The 2 KB store: eight blocks, no packet across a block boundary
+
+    @Test func blocksAboveTheFirstUseTheirOwnHeader() {
+        #expect(EEPROMWriter.header(forBlock: 0) == 0xA0)
+        #expect(EEPROMWriter.header(forBlock: 1) == 0xA2)
+        #expect(EEPROMWriter.header(forBlock: 7) == 0xAE)
+        let packets = writer.packets(writing: [1, 2, 3], toAddress: 0x100)
+        #expect(packets == [[0xA2, 0x00, 1, 2, 3, 0, 0, 0]])
+    }
+
+    @Test func aChunkStopsAtABlockBoundaryAndContinuesInTheNext() {
+        let packets = writer.packets(writing: Array(1...8), toAddress: 0xFE)
+        #expect(packets.count == 2)
+        #expect(packets[0] == [0xA0, 0xFE, 1, 2, 0, 0, 0, 0])
+        #expect(packets[1] == [0xA2, 0x00, 3, 4, 5, 6, 7, 8])
+    }
+
+    @Test func aFullTableSpansTheStoreInOrder() {
+        let packets = writer.packets(writing: [UInt8](repeating: 0x55, count: 2048), toAddress: 0)
+        #expect(packets.count == 8 * 43, "each 256-byte block is 42 full packets plus one of 4 bytes")
+        #expect(Set(packets.map { $0[0] }) == [0xA0, 0xA2, 0xA4, 0xA6, 0xA8, 0xAA, 0xAC, 0xAE])
     }
 
     @Test func theStallProneRangeIsTheOneTheFirmwareShowed() {
         #expect(EEPROMWriter.stallProneAddresses == 0x18...0x23)
-    }
-
-    // MARK: - The unknown half
-
-    @Test func theTableSerializerAdmitsTheFormatIsUnknown() throws {
-        let message = try FanMessage(slot: 0, text: "HELLO")
-        #expect(throws: FanTransportError.protocolNotYetKnown) {
-            try UnknownMessageTableSerializer().bytes(for: [message])
-        }
     }
 }

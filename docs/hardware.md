@@ -102,7 +102,8 @@ bases under both power configurations all left the disc dark; the only response 
 ever gave was write timing on `A0`-headed reports. The factory demo was erased on the
 first day of probing and has not been restorable. See the closing summary at the end of
 `protocol-findings.md`. Milestone 2 stays paused; the app connects, reports the device,
-and refuses to write (D9).
+and writes the generation-2 table it knows, saying plainly that nothing is expected to
+appear (D16).
 
 The head's LEDs are **blue**. At power-on, before the blades move, the third LED from the
 hub and the third from the tip blink dimly for under a second: a power-on indicator, not

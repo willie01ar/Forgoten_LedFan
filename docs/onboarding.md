@@ -25,7 +25,7 @@ chapter is stalled on evidence that has to come from outside the repository.
 2. Read `decisions.md`. Every design choice that is not obvious from the code is there.
 3. Do not touch the fan without reading `hardware.md` and the end of
    `protocol-findings.md`. Twelve cable swaps and an erased factory demo are recorded there,
-   and the app deliberately never writes to the head (D9).
+   and the app writes only the generation-2 table, never probes (D16).
 4. If new evidence about the message-table format arrives, the only type that changes is
    `UnknownMessageTableSerializer` (D8, D13).
 

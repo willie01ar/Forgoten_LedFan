@@ -42,7 +42,7 @@ final class LedFanUITests: XCTestCase {
 
         sendButton.click()
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Error:'")).firstMatch.exists)
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'Stored in slot 1 at'")).firstMatch.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'Stored in slot 1 on the simulated fan'")).firstMatch.waitForExistence(timeout: 2))
         attachScreenshot(of: app, named: "Legible preview, dark")
 
         app.buttons["Disconnect from the fan"].click()

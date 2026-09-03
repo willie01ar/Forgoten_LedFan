@@ -90,6 +90,12 @@ final class FanMessageViewModel {
         return nil
     }
 
+    /// The transport's warning that storing is not expected to show anything (D16), or nil.
+    var storeCaveat: String? {
+        if case .experimental(let caveat) = transport.storeAvailability { return caveat }
+        return nil
+    }
+
     var canSend: Bool {
         status.allowsSending && messageFitsTheFan && storeUnavailableReason == nil
     }
@@ -151,8 +157,8 @@ final class FanMessageViewModel {
         lastError = nil
         do {
             let fanMessage = try FanMessage(slot: selectedSlot, text: message)
-            try await transport.store(fanMessage)
-            lastStored = "Stored in slot \(fanMessage.displayNumber) at \(Date.now.formatted(date: .omitted, time: .standard))"
+            let receipt = try await transport.store(fanMessage)
+            lastStored = "\(Date.now.formatted(date: .omitted, time: .standard)): \(receipt.summary)"
         } catch {
             lastError = error.localizedDescription
         }

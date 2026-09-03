@@ -4,6 +4,47 @@ Architect decisions. Newest first. A decision here overrides anything older in t
 
 ---
 
+## D16 — The writer gets a real implementation, and D9 is relaxed
+**2026-09-03. Owner's decision, at his request. Supersedes D9.**
+
+D9 said the app never writes to the fan until the table format is known. It was right at the
+time: blind writes had erased the factory demo, and a Send button that scribbles on an
+EEPROM is not a feature. But the loss it protected against has already happened, the head
+has been dark for two days, and the owner wants the writer to exist in shape even knowing it
+will not light the disc.
+
+**Decision.** Implement the write path end to end, using the generation-2 table format that
+slice 5 recovered from the vendor serializer. Both layers of D8 become real:
+
+- `MessageTableSerializing` gains `GenerationTwoTableSerializer`, a full implementation of
+  the `0x7160` family's stream — a pure function over `[FanMessage]`, unit tested against
+  the byte-level layout in `protocol-findings.md`.
+- `EEPROMWriting` already frames `A0 <addr> <data…>` and is already tested. It stays.
+- `HIDFanTransport.store(_:)` actually sends.
+
+**This is expected not to display anything.** `0x7701` ignored this format in every
+position and encoding tried. That is the point: the value is a correct, exercised, testable
+writer, not a working fan.
+
+**Guardrails that survive.**
+1. **Honesty in the UI.** The hardware transport must state plainly that the format belongs
+   to a different generation of fan and is not expected to produce a display. Never imply
+   success because a write returned without error.
+2. **No blind traffic.** The app emits well-formed tables only. Sweeps, walking bits and
+   header probes stay in `Tools/`, run deliberately, with the owner present.
+3. **No hang on silence.** Our head never acknowledges. The vendor protocol expects a 3-byte
+   ack with status `0x80`; the transport must treat its absence as normal, not retry, not
+   block, and not report failure.
+4. **Inspectable.** A send must be reproducible after the fact — write the exact packet
+   stream to a file, as `Tools/` already does.
+5. **Feature reports stay off.** D7 is untouched.
+
+**When a Version 3 format is found**, only `MessageTableSerializing` gains a new conformance.
+Nothing above the transport changes. That has been the whole point of the seam since D8, and
+this decision is what finally proves it carries weight.
+
+---
+
 ## D15 — One final batch of guesses, then the hardware question is closed
 **2026-09-02. Answers slice-5 open question 3, and corrects its premise.**
 

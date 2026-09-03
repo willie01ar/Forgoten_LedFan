@@ -29,10 +29,12 @@ actor SimulatedFanTransport: FanDisplayTransport {
 
     func connect() async throws { isConnected = true }
 
-    func store(_ message: FanMessage) async throws {
+    func store(_ message: FanMessage) async throws -> FanStoreReceipt {
         guard isConnected else { throw FanTransportError.notConnected }
         slots[message.slot] = message
         continuation.yield(message)
+        return FanStoreReceipt(summary: "Stored in slot \(message.displayNumber) on the simulated fan.",
+                               reportCount: 0, byteCount: 0, acknowledged: true)
     }
 
     func disconnect() async { isConnected = false }

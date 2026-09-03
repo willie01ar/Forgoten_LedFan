@@ -30,9 +30,10 @@ actor RecordingTransport: FanDisplayTransport {
         if connectShouldFail { throw FanTransportError.deviceNotFound }
     }
 
-    func store(_ message: FanMessage) async throws {
+    func store(_ message: FanMessage) async throws -> FanStoreReceipt {
         if storeShouldFail { throw FanTransportError.writeFailed(code: -536870201) }
         storedMessages.append(message)
+        return FanStoreReceipt(summary: "Recorded slot \(message.displayNumber).", reportCount: 0, byteCount: 0, acknowledged: true)
     }
 
     func disconnect() async { disconnectCount += 1 }
@@ -293,7 +294,7 @@ struct FanMessageViewModelTests {
 
         #expect(viewModel.status == .connected)
         #expect(await transport.storedMessages == [try FanMessage(slot: 4, text: "FIVE")])
-        #expect(viewModel.lastStored?.hasPrefix("Stored in slot 5 at ") == true)
+        #expect(viewModel.lastStored?.hasSuffix("Recorded slot 5.") == true, "the receipt's own words, after the time")
     }
 
     @Test func connectingAdoptsTheTransportGeometry() async {
@@ -340,6 +341,20 @@ struct FanMessageViewModelTests {
         #expect(viewModel.storeUnavailableReason == "Not yet.")
         await viewModel.sendMessage()
         #expect(await transport.storedMessages.isEmpty)
+    }
+
+    @Test func anExperimentalTransportKeepsSendEnabledAndShowsItsCaveat() async {
+        let transport = RecordingTransport(storeAvailability: .experimental(caveat: "Not this generation."))
+        let viewModel = viewModel(transport: transport)
+        viewModel.message = "HI"
+
+        await viewModel.connect()
+
+        #expect(viewModel.canSend)
+        #expect(viewModel.storeCaveat == "Not this generation.")
+        #expect(viewModel.storeUnavailableReason == nil)
+        await viewModel.sendMessage()
+        #expect(await transport.storedMessages.count == 1)
     }
 
     @Test func disconnectingReturnsToDisconnected() async {

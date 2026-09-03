@@ -103,6 +103,9 @@ struct ContentView: View {
         if let reason = viewModel.storeUnavailableReason {
             Caption(text: reason, systemImage: "info.circle", tint: .secondary, prefix: "Note")
         }
+        if let caveat = viewModel.storeCaveat {
+            Caption(text: caveat, systemImage: "flask", tint: .secondary, prefix: "Note")
+        }
     }
 
     private var statusLabel: some View {

@@ -2,32 +2,35 @@ import Foundation
 import IOKit
 import IOKit.hid
 
-/// Talks to the physical fan over USB HID. It connects, reports geometry, and refuses to
-/// write (D9): there is deliberately no `IOHIDDeviceSetReport` anywhere in the app target.
+/// Talks to the physical fan over USB HID: connects, reports geometry, and writes the
+/// message table as `A0`-framed output reports (D16). It never reads anything back,
+/// because this head never sends anything back.
 actor HIDFanTransport: FanDisplayTransport {
     nonisolated let displayName = "SONiX LED fan"
     nonisolated let storeAvailability: FanStoreAvailability
 
-    /// Placeholder (D1): the real column count is unknown until the table format is.
+    /// Placeholder (D1): the real column count is unknown.
     static let placeholderGeometry = FanGeometry(ledsPerArm: 11, columnsPerRevolution: 180)
-    private static let tableAddress: UInt8 = 0
+
+    static let caveat = "This fan is a different generation from the one whose message format the app "
+        + "implements. Send will write the bytes, but nothing is expected to appear on the blades."
 
     private let vendorID: Int
     private let productID: Int
-    private let tableSerializer: any MessageTableSerializing
-    private let eepromWriter: any EEPROMWriting
+    private let writer: FanTableWriter
+    private let packetLog: PacketLog?
     private var manager: IOHIDManager?
     private var device: IOHIDDevice?
 
     init(vendorID: Int = 0x0C45,
          productID: Int = 0x7701,
-         tableSerializer: any MessageTableSerializing = UnknownMessageTableSerializer(),
-         eepromWriter: any EEPROMWriting = EEPROMWriter()) {
+         writer: FanTableWriter = FanTableWriter(),
+         packetLogDirectory: URL? = PacketLog.defaultDirectory) {
         self.vendorID = vendorID
         self.productID = productID
-        self.tableSerializer = tableSerializer
-        self.eepromWriter = eepromWriter
-        storeAvailability = .unavailable(reason: FanTransportError.protocolNotYetKnown.localizedDescription)
+        self.writer = writer
+        packetLog = packetLogDirectory.map { PacketLog(directory: $0) }
+        storeAvailability = .experimental(caveat: Self.caveat)
     }
 
     var geometry: FanGeometry { Self.placeholderGeometry }
@@ -52,11 +55,27 @@ actor HIDFanTransport: FanDisplayTransport {
         device = match
     }
 
-    func store(_ message: FanMessage) async throws {
-        guard device != nil else { throw FanTransportError.notConnected }
-        let table = try tableSerializer.bytes(for: [message])
-        let packets = eepromWriter.packets(writing: table, toAddress: Self.tableAddress)
-        try write(packets)
+    func store(_ message: FanMessage) async throws -> FanStoreReceipt {
+        guard let device else { throw FanTransportError.notConnected }
+        let reports = try writer.reports(for: [message])
+
+        var heldWrites = 0
+        for report in reports {
+            let result = Self.send(report, to: device)
+            // The vendor protocol reads a 3-byte acknowledgement after every report. This head
+            // never sends one (protocol-findings.md), so nothing is read and silence is normal.
+            if result == kIOReturnTimeout {
+                heldWrites += 1     // the 5 s hold seen in probing; the head recovers on its own
+                continue
+            }
+            guard result == kIOReturnSuccess else { throw FanTransportError.writeFailed(code: result) }
+        }
+
+        let log = try? packetLog?.write(reports, label: "slot\(message.displayNumber)")
+        let bytes = reports.reduce(0) { $0 + $1.count }
+        return FanStoreReceipt(summary: Self.receiptSummary(reportCount: reports.count, byteCount: bytes, heldWrites: heldWrites),
+                               reportCount: reports.count, byteCount: bytes, acknowledged: false,
+                               heldWrites: heldWrites, packetLog: log)
     }
 
     func disconnect() async {
@@ -67,12 +86,24 @@ actor HIDFanTransport: FanDisplayTransport {
         manager = nil
     }
 
+    // MARK: - Copy
+
+    /// What happened, without the word "sent" standing alone and without implying a display.
+    nonisolated static func receiptSummary(reportCount: Int, byteCount: Int, heldWrites: Int) -> String {
+        var summary = "Wrote \(reportCount) reports (\(byteCount) bytes) to the fan. No acknowledgement came back, which is normal for this fan. Nothing is expected on the blades."
+        if heldWrites > 0 {
+            summary += " \(heldWrites) write\(heldWrites == 1 ? " was" : "s were") held for the 5-second timeout."
+        }
+        return summary
+    }
+
     // MARK: - Helpers
 
-    /// D9: no writes until the serializer is real. When that decision is lifted, this is
-    /// where the SET_REPORT loop goes, pacing `EEPROMWriter.stallProneAddresses`.
-    private func write(_ packets: [[UInt8]]) throws {
-        throw FanTransportError.writingDisabled
+    private static func send(_ report: [UInt8], to device: IOHIDDevice) -> IOReturn {
+        report.withUnsafeBufferPointer { buffer in
+            guard let base = buffer.baseAddress else { return kIOReturnBadArgument }
+            return IOHIDDeviceSetReport(device, kIOHIDReportTypeOutput, 0, base, buffer.count)
+        }
     }
 
     private static func firstDevice(in manager: IOHIDManager) -> IOHIDDevice? {

@@ -25,11 +25,13 @@ final class HardwareChecklistUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["SONiX LED fan: Connected"].waitForExistence(timeout: 10),
                       "Status was: \(statusText(in: app))")
 
-        // D9: the app never writes to the head. Send stays off and the UI says why.
+        // D16: the app writes the generation-2 table and says plainly what to expect.
         let sendButton = app.buttons["Send the message to the fan"]
-        XCTAssertFalse(sendButton.isEnabled, "Send must be disabled on hardware until the table format is known")
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS \"isn't known yet\"")).firstMatch.exists)
-        attachScreenshot(of: app, named: "Hardware connected, send refused")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'different generation'")).firstMatch.exists)
+        XCTAssertTrue(sendButton.isEnabled)
+        sendButton.click()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'No acknowledgement'")).firstMatch.waitForExistence(timeout: 10))
+        attachScreenshot(of: app, named: "Hardware connected, table written")
 
         app.buttons["Disconnect from the fan"].click()
         XCTAssertTrue(app.staticTexts["SONiX LED fan: Not connected"].waitForExistence(timeout: 5))
@@ -58,7 +60,6 @@ final class HardwareChecklistUITests: XCTestCase {
         XCTAssertTrue(app.textFields["Message to display on the fan"].waitForExistence(timeout: 5))
         app.radioButtons["USB fan"].click()
         XCTAssertTrue(app.staticTexts["SONiX LED fan: Not connected"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["Send the message to the fan"].isEnabled)
     }
 
     @MainActor

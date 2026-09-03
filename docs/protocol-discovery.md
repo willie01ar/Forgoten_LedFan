@@ -257,5 +257,5 @@ configuration lives; corrupting that is not recoverable and, with no read path, 
 diagnosable. Feature-report writes are declined (decisions.md D7) except for a specific,
 argued hypothesis, and never as a sweep.
 
-Nothing in the app target writes to the head at all (D9). Blind writes are a `Tools/`
-activity, done deliberately, with the owner at the fan and asking for it.
+The app writes only well-formed generation-2 tables (D16), never probes. Blind writes are
+a `Tools/` activity, done deliberately, with the owner at the fan and asking for it.

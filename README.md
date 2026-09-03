@@ -24,7 +24,9 @@ A native macOS app (Swift 6, SwiftUI, no third-party dependencies) where you:
 - keep all eight drafts between launches
 - connect to the real fan, which the app finds and identifies
 
-And one thing it deliberately does not do: **it never writes to the fan.** Read on.
+And one thing it does with its eyes open: it writes a message table to the fan in the only
+format anyone has recovered, which belongs to a sibling model, and then tells you plainly
+that nothing is expected to appear. Read on.
 
 ![The preview](docs/reports/images/2026-09-02-legible-preview-dark.png)
 
@@ -82,9 +84,9 @@ Three things would reopen the hardware chapter:
 - **a USB capture** of that editor programming one of these fans
 - **a second fan** of the same model, to compare against
 
-If you have any of those, the app is ready for you: the only type that changes when the
-table format arrives is one small serializer, and the tests and the rest of the app will
-not notice.
+If you have any of those, the app is ready for you: the write path is real and tested end
+to end with the sibling's format, and the only type that changes when this fan's format
+arrives is one serializer. The tests and the rest of the app will not notice.
 
 ## Building and running
 

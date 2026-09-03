@@ -13,14 +13,16 @@ revolution scrolling as a marquee with a dark gap before they wrap. Characters w
 glyph are named in a caption and drawn blank. Over-length drafts are refused visibly and
 never cut. The eight drafts and the selected slot survive relaunch. The simulated fan
 stores messages per slot and confirms with a time-stamped line. The USB fan connects,
-reports itself, and states plainly that its message format is not yet known, with Send
-disabled rather than failing.
+reports itself, and states plainly that the message format the app implements belongs to a
+different generation of fan; Send writes the table anyway, logs the exact packets, and
+reports "no acknowledgement", never success.
 
 **What is blocked, and why.** Sending a message to the physical fan. The head is a
 write-only HID device on the rotating hub whose stored-table format was never found: every
 free route was exhausted over twelve cable swaps, a blind sweep erased the factory demo,
-and the vendor editor that was found targets a sibling product. The app therefore never
-writes to the head (D9). This is not a software problem. What would reopen it is at the
+and the vendor editor that was found targets a sibling product. The app writes the only
+format it has, the generation-2 table (D16), knowing the head ignores it. This is not a
+software problem. What would reopen it is at the
 end of `protocol-findings.md`.
 
 **Where the hardware investigation stands.** Stalled, not closed, in the architect's
@@ -45,9 +47,10 @@ LedFan/
     FanDisplayTransport.swift   transport protocol (geometry, store, storeAvailability) + FanTransportError
     FanTransportProviding.swift FanTransportKind, the provider protocol, FixedTransportProvider
   Transport/
-    EEPROMWriter.swift          EEPROMWriting (KNOWN, D8): A0, address, six data bytes per report
-    MessageTableSerializer.swift MessageTableSerializing (UNKNOWN, D8): the one type that throws .protocolNotYetKnown
-    HIDFanTransport.swift       actor over IOHIDDevice; connects, reports geometry, never writes (D9)
+    EEPROMWriter.swift          EEPROMWriting (D8): 24C16 block addressing, six data bytes per report
+    GenerationTwoTableSerializer.swift  MessageTableSerializing + the 0c45:7160 family's table, byte for byte (D16)
+    FanTableWriter.swift        serializer -> EEPROM reports, no I/O; PacketLog writes each send to a file
+    HIDFanTransport.swift       actor over IOHIDDevice; connects, writes the table, returns a receipt, never reads (D16)
     SimulatedFanTransport.swift actor holding messages per slot; storedMessages stream is a test seam
     DefaultFanTransportProvider.swift  production wiring of kind -> transport
     MessageStoring.swift        SavedDrafts + the persistence protocol; normalises malformed data
@@ -66,7 +69,9 @@ LedFanTests/                    Swift Testing
     MessageRasterizerTests.swift
     FrameComposerTests.swift         invariant, arc, offset, wrap, orientation
     FanMessageTests.swift            slot and length validation
-    EEPROMWriterTests.swift          the known half of the encoder, and the unknown half's refusal
+    EEPROMWriterTests.swift          block addressing, padding, packet counts
+    GenerationTwoTableSerializerTests.swift  byte-for-byte against the vendor stream
+    FanTableWriterTests.swift        the seam with a trivial serializer; the packet log
     MessageStoreTests.swift          SavedDrafts normalisation, file store round trip, corrupt data
     FanTransportTests.swift          simulated transport, hardware refusal, error copy
     FanMessageViewModelTests.swift   RecordingTransport and RecordingMessageStore doubles; scrolling; persistence
@@ -100,9 +105,9 @@ Tools/                          throwaway probes, outside the app target
 
 ## Known limits
 
-1. **The fan's stored-table format is unknown and the factory demo is erased.**
-   `UnknownMessageTableSerializer` is the placeholder; `EEPROMWriter` frames whatever it
-   will produce. Milestone 2 is paused (D6) and the app never writes to the head (D9).
+1. **The fan's stored-table format is unknown and the factory demo is erased.** The app
+   writes the generation-2 table (D16), which this head ignores. A Version 3 format, if one
+   is ever found, is one new `MessageTableSerializing` conformance.
 2. **`HIDFanTransport.placeholderGeometry`** (11 LEDs, 180 columns) is a preview guess.
 3. **At 180 columns per revolution, no message scrolls.** The longest allowed message is
    26 characters, 156 columns at the rasterizer's 6-column pitch, which fits one revolution.
@@ -121,10 +126,12 @@ Tools/                          throwaway probes, outside the app target
   transfers failing with `kIOReturnNotOpen` on this fan.
 - The transport's unit of work is a `FanMessage` in a slot (D5). Frames, strips and
   angular resolution are preview-only concerns; nothing above the transport knows the wire.
-- The unknown protocol is confined to one type, `UnknownMessageTableSerializer`. Keep it
-  that way. The known framing, `EEPROMWriter`, is fully tested.
-- `HIDFanTransport` is deliberately thin. It connects, reports geometry and refuses to
-  store; it contains no report-writing call at all (D9).
+- The table format is confined to one type, `GenerationTwoTableSerializer`, behind
+  `MessageTableSerializing`; the framing, `EEPROMWriter`, is separate and fully tested.
+  `FanTableWriter` joins them with no I/O, so any format can be driven through the whole
+  chain in tests.
+- `HIDFanTransport` is deliberately thin. It connects, sends the writer's reports, never
+  reads (this head never answers), logs every send, and returns a receipt in plain words.
 - Drafts are saved through `MessageStoring`, injected with a file store by default and a
   transient store for previews and UI tests. The ViewModel never knows which.
 - Scrolling is a `TimelineView` reading a pure `previewFrame(at:)` from the ViewModel. No

@@ -30,7 +30,7 @@ nonisolated protocol FanDisplayTransport: Sendable {
     var geometry: FanGeometry { get async }
 
     func connect() async throws
-    func store(_ message: FanMessage) async throws
+    func store(_ message: FanMessage) async throws -> FanStoreReceipt   // what happened, in words
     func disconnect() async
 }
 
@@ -42,12 +42,12 @@ nonisolated protocol FrameComposing: Sendable {
     func frame(from strip: ColumnStrip, geometry: FanGeometry, columnOffset: Int) -> POVFrame
 }
 
-/// KNOWN. A0, address, up to six data bytes per 8-byte report.
+/// Framing: 24C16 block addressing, up to six data bytes per 8-byte report.
 nonisolated protocol EEPROMWriting: Sendable {
-    func packets(writing bytes: [UInt8], toAddress address: UInt8) -> [[UInt8]]
+    func packets(writing bytes: [UInt8], toAddress address: UInt16) -> [[UInt8]]
 }
 
-/// UNKNOWN. The table the display firmware parses.
+/// The table the display firmware parses. One conformance ships: the generation-2 family's.
 nonisolated protocol MessageTableSerializing: Sendable {
     func bytes(for messages: [FanMessage]) throws -> [UInt8]
 }
@@ -74,16 +74,19 @@ on the top of the disc and mirrors columns so glyph tops sit at the rim.
 
 ## Where the unknown lives
 
-The wire protocol is unknown, and that uncertainty is confined to **exactly one type**:
-the `MessageTableSerializing` conformance, `UnknownMessageTableSerializer`, which throws
-`.protocolNotYetKnown`. `EEPROMWriting` is known and tested. When the table format is
-discovered, only the serializer changes. If a protocol discovery forces edits in the
-ViewModel, the rasterizer, or the views, the boundary was drawn wrong.
+This head's table format is unknown. The format the app implements,
+`GenerationTwoTableSerializer`, is the sibling generation's, recovered from the vendor
+editor (D16); it is the only `MessageTableSerializing` conformance, and the only type that
+changes when a format for this head is found. `FanTableWriter` joins the serializer to
+`EEPROMWriting` with no I/O, which is what lets a test drive a trivial format through the
+whole chain (slice 8, Task 4). If a new format forces edits in the ViewModel, the
+rasterizer, or the views, the boundary was drawn wrong.
 
-`HIDFanTransport` owns the device handle. It connects and reports geometry, and it does
-**not** write: there is deliberately no `IOHIDDeviceSetReport` in the app target (D9). The
-transport tells the ViewModel so through `storeAvailability`, and the ViewModel keeps Send
-disabled rather than enabled-then-failing.
+`HIDFanTransport` owns the device handle. It connects, sends the writer's reports with
+`IOHIDDeviceSetReport`, reads nothing back because this head never answers, logs each
+send's packets to a file, and returns a `FanStoreReceipt`. It declares
+`storeAvailability = .experimental(caveat:)`; the ViewModel shows the caveat and keeps Send
+enabled, and the receipt's words, never "sent" alone, become the confirmation line.
 
 ## Concurrency model
 

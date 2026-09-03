@@ -1,9 +1,30 @@
 import Foundation
 
-/// Whether a transport can accept messages at all. Unavailable carries copy for the user.
+/// Whether a transport can accept messages, and on what terms.
 nonisolated enum FanStoreAvailability: Sendable, Equatable {
     case available
+    /// Bytes go out, but a display is not expected. The caveat says why, for the user.
+    case experimental(caveat: String)
     case unavailable(reason: String)
+}
+
+/// What a store actually did, in the user's terms. Never implies a display.
+nonisolated struct FanStoreReceipt: Sendable, Equatable {
+    let summary: String
+    let reportCount: Int
+    let byteCount: Int
+    let acknowledged: Bool
+    let heldWrites: Int
+    let packetLog: URL?
+
+    init(summary: String, reportCount: Int, byteCount: Int, acknowledged: Bool, heldWrites: Int = 0, packetLog: URL? = nil) {
+        self.summary = summary
+        self.reportCount = reportCount
+        self.byteCount = byteCount
+        self.acknowledged = acknowledged
+        self.heldWrites = heldWrites
+        self.packetLog = packetLog
+    }
 }
 
 /// What a fan can do, independent of how it is wired. The unit of work is a message in a
@@ -14,7 +35,7 @@ nonisolated protocol FanDisplayTransport: Sendable {
     var geometry: FanGeometry { get async }
 
     func connect() async throws
-    func store(_ message: FanMessage) async throws
+    func store(_ message: FanMessage) async throws -> FanStoreReceipt
     func disconnect() async
 }
 
@@ -23,8 +44,8 @@ nonisolated enum FanTransportError: Error, Sendable, Equatable {
     case openFailed(code: Int32)
     case notConnected
     case writeFailed(code: Int32)
-    case protocolNotYetKnown
-    case writingDisabled
+    case nothingToStore
+    case tableTooLarge(bytes: Int, limit: Int)
 }
 
 extension FanTransportError: LocalizedError {
@@ -38,10 +59,10 @@ extension FanTransportError: LocalizedError {
             return "Not connected to the fan."
         case .writeFailed(let code):
             return "The fan rejected the write (IOKit error \(code))."
-        case .protocolNotYetKnown:
-            return "The fan's message format isn't known yet, so messages can't be sent to it. Connecting still works and shows what the fan reports."
-        case .writingDisabled:
-            return "This version of the app never writes to the fan. Nothing was sent."
+        case .nothingToStore:
+            return "The message is empty, so there is nothing to write."
+        case .tableTooLarge(let bytes, let limit):
+            return "The message table is \(bytes) bytes; the fan's store holds \(limit). Nothing was written."
         }
     }
 }
