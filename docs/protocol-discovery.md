@@ -1,12 +1,96 @@
 # Protocol discovery
 
-**CLOSED 2026-09-02 (D15, slice 6).** The hardware path is closed. Eleven cable swaps,
-every free route below exhausted, and the head has not lit a single LED during rotation
-since a header sweep erased its factory demo. The one-paragraph summary for a later
-reader is at the end of `protocol-findings.md` ("The hardware path is closed"). Only three
-things reopen it: the software that shipped with a `0c45:7701` fan, a USB capture of it
-programming one, or a second unit. The rest of this document is kept as the record of
-what was tried and why.
+**REOPENED 2026-09-02**, hours after being closed. The closure was premature: a
+review found leads that had never been tried. Do not treat the hardware path as closed
+while anything in "Reopened leads" below is outstanding.
+
+The slice-6 result stands — the batch was sent, the disc stayed dark — and everything
+recorded here about what was eliminated remains true. What changed is that the set of
+things still worth trying was wrong.
+
+## Reopened leads (2026-09-02)
+
+**A. CLOSED (2026-09-02, same day) — there is no handshake packet.**
+The routine behind the connect indicator is a UI polling timer that opens the device, sets
+a flag, updates the send button and closes again. It sends nothing. All three
+`OpenUSBDevice` sites are now accounted for and none issues a handshake, so the LED flash
+is `0x7160` firmware behaviour on being opened, not a command a host can send. There is no
+live oracle. See `protocol-findings.md`, "Lead A closed". Original text follows.
+
+**A. The bundled manual describes a LIVE ORACLE we never used.**
+`vendor/LedFan/fan-instructions.pdf` — a Promier single-page manual for "USB DATA DOWNLOAD
+SYSTEM V2.0", present in the download since the start and never opened until now — says:
+
+> "After connecting with the USB fan, the computer will find the software of the USB fan
+> automatically. The send button will change from gray to black **while the LED lights
+> flash one by one**, which proves that the connection is successful."
+
+On a working fan of this family, a successful handshake makes the LEDs **flash one by one,
+during the data phase, with the data cable connected**. This project's central premise —
+"there is no live observation; the only oracle is a cable swap" — is therefore wrong for
+the handshake at least. If a packet sequence can be found that makes this head flash its
+LEDs, there is a feedback loop costing zero swaps, and the whole economics of probing
+change.
+
+Whether our head has ever done this is unknown and was never watched for. Ask the owner.
+
+**B. PEARL PX-5939 is a 26-character variant — ours.**
+`PEARL USB-Ventilator mit 8 programmierbaren Laufschriften, je 26 Zeichen`, model PX-5939 /
+HPM-5939-919. Eight messages, 26 characters: our head's exact specification, where every
+other variant found so far is 18 or 20. PEARL maintains a per-product support page with
+**software** and a manual:
+- Support/software: `https://www.pearl.de/support/product.jsp?pdid=PX5939`
+- Manual: `https://www.pearl.de/pdocs/PX5939_11_153964.pdf`
+
+**Direct file URLs** (found 2026-09-02 via `pearl-brands.com/mini-pc-fan-PX-5939-919.shtml`;
+the `support/product.jsp` page does not respond):
+- Software: `ftp://ftp.pearl.de/treiber/PX5939_12_148115.zip` — **FTP**, which is why
+  browsers show nothing. Fetch with `curl -O`.
+- Manual: `https://www.pearl.de/pdocs/PX5939_11_153964.pdf`
+- Article PX-5939-919, EAN 4022107226189.
+
+Also worth grabbing as lead-C material: the PX-1144 fan's driver (1.33 MB) at
+`https://www.pearl.de/support/product.jsp?pdid=PX1144` — a 16-character variant, so a
+different build again, and possibly one that opens more than one PID.
+
+**STALLED ON REACHABILITY, not closed (2026-09-02).** `ftp.pearl.de` is gone: their own
+firewall `fw1.pearl.de` answers but returns *Destination Host Unreachable* for
+62.159.194.69, and FTP was retired industry-wide years ago — the DNS record is stale.
+`www.pearl.de` also times out, from both the owner's machine in the US and from a cloud
+fetcher, so the whole host may be EU-only or down. `pearl-brands.com` and `c-enter.at` are
+reachable but 404 on `/pdocs/` paths, so the group domains do not mirror the files.
+
+The file is not indexed on any mirror. Ways this could still be obtained: retry
+`www.pearl.de` later or from a European network; ask someone in the EU to fetch
+`PX5939_12_148115.zip`; or look for the retired FTP path in a web archive. None of these
+are things a build session can do — this one needs a person.
+
+**What would make this decisive.** If that zip contains an editor whose `OpenUSBDevice`
+call names `0x7701`, the protocol question is answered by disassembly alone, with no cable
+swaps. If it is the same Promier/`0x7160` build under a different wrapper, lead B is closed
+and so, most likely, is the hardware chapter.
+
+**C. STALLED (2026-09-03).** The Chinese mirror served a libcurl downloader stub, not the
+editor (see `vendor/_not-the-software/`). AppNee gates its copy behind a shell script the
+owner declined to run — correctly: an unverifiable script from a software-mirror site, run
+on a development machine, is disproportionate risk for a fifteen-year-old utility. It is
+also very likely the wrong generation: AppNee's build is for **USB Fan Version 2.0**, and
+the working hypothesis is that `0x7701` is a **Version 3** device.
+
+**The search target has changed.** Stop looking for "software for our fan" and look for the
+**USB Fan Version 3.0 editor**. No Version 3 software has been located anywhere. Until it
+is, the hardware chapter stays stalled.
+
+**C (original). Other builds of the vendor tool, never downloaded.**
+The Promier/LitezAll download is the same `LedFan.zip` already in `vendor/` (confirmed: same
+Shopify CDN). But "USB DATA DOWNLOAD SYATEM v2.0", which supports 7/11/16-LED variants, is
+mirrored at jb51.net, 3h3.com, xitongzhijia.net and CSDN, and appnee.com hosts a "USB LED
+Fan Editor for USB Fan Version 2". These are different builds and may open more than one
+PID.
+
+**Why this matters.** Our exe hardcodes `0x7160`. A build for a 26-character fan would be
+built for a different product, and its `OpenUSBDevice` call would name that product's PID —
+possibly `0x7701`.
 
 The one genuinely unsolved problem. The app is straightforward; this is not.
 

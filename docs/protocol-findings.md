@@ -794,3 +794,74 @@ family and the table's general shape.
 **What would reopen this.** The software that shipped with a `0c45:7701` fan; a USB
 capture of that software programming one; or a second unit. Nothing else that is free has
 been left untried, and this head cannot be opened for a read path.
+
+---
+
+## 2026-09-02 (late) — Lead A closed: there is no handshake packet
+
+The bundled Promier manual says that on connecting the fan "the LED lights flash one by
+one, which proves that the connection is successful". That raised the possibility of a
+**live oracle**: a command that produces a visible response during the data phase, with no
+cable swap. The owner confirmed he has never seen his head do this.
+
+The third `OpenUSBDevice` call site — file `0x1fdde`, VA `0x4209de`, the one slice 5 left
+unaccounted for — has now been disassembled. **It is a UI polling timer, and it sends
+nothing.**
+
+```
+4209a0 (01fda0)  cmp  [esp+4], 2                  ; OnTimer, event id 2
+4209cf (01fdcf)  mov  eax, [0x5abd9c]             ; OpenUSBDevice
+4209dd (01fddd)  push 0x7160 / push 0x0C45 / call eax
+4209ed (01fded)  cmp  ebx, -1 / setne al
+4209fc (01fdfc)  mov  [esi+0x4fd94], eax          ; "connected" flag
+4209f7..420a39   push 0x173 / 0x172 -> call edi   ; enable/disable the send button
+420a3d (01fe3d)  call [0x5abd98]                  ; CloseUSBDevice
+```
+
+Open, test the handle, update the button, close. No `WriteUSB`, no report, no payload.
+All three `OpenUSBDevice` sites are now accounted for: this poll, the send routine
+(`0x02019e`), and the upload routine (`0x02031d`). **None of them sends a handshake.**
+
+**Therefore the LED flash is firmware behaviour on the `0x7160` head, triggered by being
+opened or enumerated — not a command the host can issue.** There is no packet to send, so
+there is no live oracle to build. Lead A is closed.
+
+Note this does not mean our head is faulty: it drives LEDs fine (two blue LEDs blink at
+power-on, slice 6). It simply lacks the `0x7160`'s connect indicator, which is one more
+piece of evidence that `0x7701` is a different product with different firmware, not a
+rebadge.
+
+**Cost of establishing this: one disassembly, no cable swaps.** Worth recording as the
+cheapest negative result in the project.
+
+---
+
+## 2026-09-03 — Lead C first attempt: a downloader stub, and a new distinction
+
+The file obtained from the Chinese mirror is not the editor. It is a libcurl downloader
+wrapper that fetches the real archive at runtime — no USB or HID code of any kind. The six
+apparent `0x7701` immediates are `83 f9 01` / `77 xx` (`cmp ecx,1` / `ja short`), a byte
+coincidence in branch code. Moved to `vendor/_not-the-software/` with the evidence.
+
+**Method note.** The same false-positive check that cleared this file is the one that found
+the real `push 0x7160 / push 0x0C45` pairs in the Promier exe. A 16-bit value appearing in a
+binary means nothing until the surrounding instruction is read. Two of my own leads in this
+project have died on exactly that check.
+
+### New: there are two hardware generations
+AppNee's catalogue describes its editor as being for **"USB Fan Version 2.0"** devices,
+"distinguishing it from the Version 3.0 alternative", and lists LED counts of 7, 11, 16 and
+32 with four spin speeds.
+
+Everything analysed so far — the Promier/LitezAll `LedFan.exe`, `WxkUSB.dll`, the font
+tables, the `0x7160` PID — is **generation 2**. Our head holds 26 characters where every
+generation-2 variant found holds 18 or 20, has a PID (`0x7701`) that appears in no
+generation-2 build, ignores generation-2 table formats entirely, and lacks the
+generation-2 connect indicator.
+
+**Working hypothesis: `0x7701` is a Version 3 device, and no Version 3 software has been
+located.** That would explain every negative result in this project at once, and it
+reframes the search: the target is not "the software for our fan" but "the USB Fan Version
+3.0 editor".
+
+Appnee's tag page returns 403 to automated fetching; a person can browse it.
