@@ -1193,3 +1193,11 @@ defines the whole stored set: the head keeps exactly the images it was just give
 anything not sent is cleared rather than preserved. That matches the reference driver,
 which numbers images from 0 and never pads to 8. To keep several messages, send them all
 in one session, in slot order. Fan A's demo is now gone for good; Fan B's is intact.
+
+**Acknowledgements: the head answers.** Receipt line, verbatim: "Wrote 40 reports (320
+bytes) in 0.6 s". The transport waits up to one second per report for an interrupt-IN
+report and moves on only when one arrives or the second expires; 40 reports in 0.6 s means
+every wait ended early, about 15 ms each. So the head acknowledged all 40 on the interrupt
+endpoint, for the first time in this project's history. The first head never did, because it
+was never sent a well-formed image. The acknowledgement bytes are in the send's `.hex` log
+in the app container; to be added here when the owner copies it out.

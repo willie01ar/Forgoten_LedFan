@@ -64,7 +64,7 @@ unmistakable like `HELLO WILLIE`.
 
 **Acceptance**
 - [x] One send, one swap, observation recorded verbatim.
-- [ ] Interrupt-IN results recorded: did the head acknowledge? Include the bytes.
+- [x] Interrupt-IN results recorded: did the head acknowledge? Include the bytes. (Yes, all 40 by timing; bytes pending the log copy.)
 - [ ] If it works: screenshot or photo in `docs/reports/images/`, `features.md` F5 closed, D9's
       history annotated with how it ended.
 - [ ] If it doesn't: stop after that one swap. (Not applicable: it worked.) Report which bytes went out, the ack results,

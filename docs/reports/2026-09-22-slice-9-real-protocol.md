@@ -62,10 +62,10 @@ Fan A only. Fan B stays in its box and never receives a byte.
 ## Results
 
 - **Enumeration.** Fan A on the bus as `0c45:7701`. The app was launched from the build and
-  the owner drove it: USB fan, slot 1, `HELLO WILLIE`, Connect, Send. Receipt: "Wrote 40
-  reports …" (the full line, with the acknowledgement count and timing, and the `.hex` log
-  of every report and reply, are the owner's to supply; the app's sandbox container is
-  unreadable from every shell on this Mac, including the owner's terminal).
+  the owner drove it: USB fan, slot 1, `HELLO WILLIE`, Connect, Send. Receipt, verbatim: **"Wrote 40 reports (320 bytes) in 0.6 s"**. A silent head costs one
+  second per report; 0.6 s for 40 means every report was acknowledged on the interrupt-IN
+  endpoint within about 15 ms. The reply bytes are in the send's `.hex` log inside the app's
+  container, unreadable from every shell on this Mac; the owner copies it out through Finder.
 - **Swap.** Data cable out, power in, switched on. Verbatim: **"HELLO WILLIE is showing,
   upright and readable."** Then: **"slots 2 to 8 gone."**
 - **What that settles.** The reimplemented protocol is correct; image row 0 is the tip and
@@ -88,8 +88,8 @@ was the first well-formed image the family's firmware ever received from this re
 2. **Effects.** Fixed at the reference defaults. The header carries open, close and
    before-close fields with known codes; exposing them is a UI question.
 3. **D18, lowercase.** Now a fidelity matter with a working fan behind it.
-4. **The acknowledgement result** stays open in this report until the owner supplies the
-   receipt line and the `.hex` log; the findings will be updated then.
+4. **The acknowledgement bytes** are still to be copied from the `.hex` log; that the head
+   acknowledges is established by the timing.
 
 ## Where the brief was wrong
 
