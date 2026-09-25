@@ -1217,3 +1217,17 @@ except that the head received the bytes. A future transport could check each ech
 what it sent and treat a mismatch as a transfer error; the reference does not, and ours
 does not yet. The first head's `GET_REPORT` behaviour (returning the last SETUP packet) was
 a different, control-pipe echo and never this one.
+
+### 2026-09-25 — Second send, and a stale-handle gap in the app
+After the first swap the owner plugged the data cable back in and pressed Send with the app
+still showing "Connected". The write failed with `kIOReturnBadArgument` (`0xE00002C2`,
+shown as IOKit error -536870206): the unplug had torn the `IOHIDDevice` down and the app
+kept the dead handle. Disconnect, then Connect, then Send worked: **"Hello Swift 6.0 -
+Amazing"** was sent and the fan reads **"HELLO SWIFT 6.0 - AMAZING"** — capitals because
+the font has no lowercase (D18), every other glyph correct, including digits, the period
+and the hyphen.
+
+Two facts for the app, not the protocol: a torn-down device answers `SetReport` with
+`kIOReturnBadArgument`, not `kIOReturnNoDevice`; and the transport needs to notice removal
+(`IOHIDDeviceRegisterRemovalCallback`, or treating that code as "reconnect") so a user who
+has just swapped cables is not shown a dead "Connected".

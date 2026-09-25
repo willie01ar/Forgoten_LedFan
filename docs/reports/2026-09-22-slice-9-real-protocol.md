@@ -92,6 +92,10 @@ was the first well-formed image the family's firmware ever received from this re
 3. **D18, lowercase.** Now a fidelity matter with a working fan behind it.
 4. **Echo checking.** The head echoes every report; comparing echoes to what was sent would
    turn the acknowledgement into a real transfer check. The reference does not; neither do we.
+5. **Device removal.** After a cable swap the app still says "Connected" and the next Send
+   fails with `kIOReturnBadArgument`; Disconnect then Connect fixes it. The transport should
+   observe removal or treat that code as a lost connection. Found on the owner's second
+   send, which then displayed "HELLO SWIFT 6.0 - AMAZING" correctly.
 
 ## Where the brief was wrong
 
