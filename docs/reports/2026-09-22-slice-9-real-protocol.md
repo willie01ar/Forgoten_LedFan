@@ -25,6 +25,14 @@ each report with what came back. The generation-2 writer stays selectable behind
 | README credits | Added: pearlfan-rs, Ventto/pearlfan, and the two sibling-fan projects. |
 | One send, one swap, observation verbatim | Pending, below. |
 
+## The vendor mini-CD (addendum, item 2)
+
+Not read. The owner has no drive that takes a 3-inch disc, and the MacBook has no optical
+drive. `vendor/px5939/` therefore does not exist, and the reference for this fan remains
+pearlfan-rs alone, as the addendum allows. The disc stays worth reading if a tray-loading
+drive ever turns up: it would give the vendor's own effect codes and font, including
+lowercase.
+
 ## Where the geometry stands
 
 The brief's caution was checked: our rasterizer's 6-column pitch places character `i` at
