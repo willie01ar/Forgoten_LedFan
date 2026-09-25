@@ -93,7 +93,7 @@ The app must be fully usable and demoable with no hardware attached.
 
 ## F5 — Sending to hardware
 
-**The writer speaks the fan's own protocol (D17). Milestone 2 turns on the first send.**
+**Done. The fan shows what the app sends (2026-09-25, slice 9).**
 
 **Acceptance**
 - [x] Send is disabled unless connected.
@@ -116,8 +116,10 @@ The app must be fully usable and demoable with no hardware attached.
 - [x] `GenerationTwoTableSerializer` stays selectable through `FanTableWriter`, the same
       `FanReportEncoding` seam.
 - [x] The seam holds: a trivial test-only serializer runs through the same writer unchanged.
-- [ ] A message stored on the hardware appears on the blades. Awaiting the first send with
-      the PearlFan protocol (slice 9, Task 3).
+- [x] A message stored on the hardware appears on the blades. `HELLO WILLIE`, slot 1,
+      first send, "upright and readable" (`protocol-findings.md`, 2026-09-25).
+- [x] A send defines the whole stored set: slots not sent are cleared, not preserved. The
+      app currently sends one slot at a time; see the slice 9 report's open item.
 
 ---
 

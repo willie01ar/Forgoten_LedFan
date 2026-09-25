@@ -29,9 +29,9 @@ From pearlfan-rs, document in `protocol-findings.md`:
 - any delays, init or finish sequence
 
 **Acceptance**
-- [ ] The layout is written down with a worked example: the full packet list for a
+- [x] The layout is written down with a worked example: the full packet list for a
       one-message table containing "A".
-- [ ] The source file and line for each fact is cited, so the work can be checked.
+- [x] The source file and line for each fact is cited, so the work can be checked.
 
 ## Task 2 — A reference-exact encoder
 
@@ -42,12 +42,12 @@ The app's current preview uses a 6-column glyph pitch, and 26 x 6 = 156, so it m
 geometry. If it turns out not to, report it rather than bending the rasterizer.
 
 **Acceptance**
-- [ ] **Golden test:** for at least three inputs (empty slot, "A", a full 26 characters), the
+- [x] **Golden test:** for at least three inputs (empty slot, "A", a full 26 characters), the
       Swift output equals pearlfan-rs's output byte for byte. Generate the reference bytes by
       building and running pearlfan-rs *in a dry-run mode or a test harness*. If it has no
       dry-run, capture its packets at the libusb layer, or hand-derive them from Task 1 and
       say that you did.
-- [ ] Effects map to the D-vocabulary where it matches; default is "remain".
+- [x] Effects map to the D-vocabulary where it matches; default is "remain".
 
 ## Task 3 — Wire it and test on the fan, once
 
@@ -63,11 +63,11 @@ the command or button, then the swap and what to look for. One message, somethin
 unmistakable like `HELLO WILLIE`.
 
 **Acceptance**
-- [ ] One send, one swap, observation recorded verbatim.
+- [x] One send, one swap, observation recorded verbatim.
 - [ ] Interrupt-IN results recorded: did the head acknowledge? Include the bytes.
 - [ ] If it works: screenshot or photo in `docs/reports/images/`, `features.md` F5 closed, D9's
       history annotated with how it ended.
-- [ ] If it doesn't: stop after that one swap. Report which bytes went out, the ack results,
+- [ ] If it doesn't: stop after that one swap. (Not applicable: it worked.) Report which bytes went out, the ack results,
       and the difference from the reference. Don't iterate blind.
 
 ## Out of scope

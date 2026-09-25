@@ -20,11 +20,10 @@ it to the physical fan over USB.
 Type a message, watch the polar preview update live, store it on the simulated transport,
 full unit test coverage of the domain. No USB required.
 
-**Milestone 2 — the app talks to the fan.** Paused (D6, 2026-09-02). The app connects to
-`0x0C45:0x7701`, reports the device, and refuses to write until the head's message-table
-format is known (D9). Messages are the unit of work, one per slot (D5), not frames. The
-format was not found: see `protocol-findings.md`, "The hardware path is closed", and the
-brief's own note that it is stalled rather than closed. Only outside evidence reopens it.
+**Milestone 2 — the app talks to the fan.** Done (slice 9, 2026-09-25). The app connects to
+`0x0C45:0x7701`, sends a message as a PearlFan-protocol image (D17), and the fan displays it.
+The protocol came from the public pearlfan-rs driver after the original head was destroyed
+and a replacement with the same PID was bought; see `protocol-findings.md`, 2026-09-22 on.
 
 **Milestone 3 — finishing.** Done (slice 7, 2026-09-03). Scrolling for messages longer
 than a revolution, with Reduce Motion respected; the eight slots persist between

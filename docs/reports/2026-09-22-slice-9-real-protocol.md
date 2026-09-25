@@ -2,8 +2,8 @@
 
 **Date:** 2026-09-25 (brief issued 2026-09-22, addendum 2026-09-25)
 **Brief:** `docs/briefs/2026-09-22-slice-9-brief.md`. D17, D16, D8.
-**Status:** Tasks 1 and 2 complete and committed before any packet goes out. Task 3, the one
-send and one swap, follows the owner's checklist below; its results are appended when made.
+**Status:** complete. One send, one swap, and the fan displayed the message. Milestone 2 is
+reached; F5 is closed.
 
 ## Summary so far
 
@@ -23,7 +23,7 @@ each report with what came back. The generation-2 writer stays selectable behind
 | Builds with no warnings; all tests pass, golden tests included | Yes. 131 unit tests, 8 UI tests, 2 hardware tests skipped without the flag. 0 warnings. |
 | Findings with citations and a worked example | `protocol-findings.md`, "Slice 9". |
 | README credits | Added: pearlfan-rs, Ventto/pearlfan, and the two sibling-fan projects. |
-| One send, one swap, observation verbatim | Pending, below. |
+| One send, one swap, observation verbatim | Done: "HELLO WILLIE is showing, upright and readable"; "slots 2 to 8 gone". |
 
 ## The vendor mini-CD (addendum, item 2)
 
@@ -61,8 +61,57 @@ Fan A only. Fan B stays in its box and never receives a byte.
 
 ## Results
 
-*(appended after the send and the swap)*
+- **Enumeration.** Fan A on the bus as `0c45:7701`. The app was launched from the build and
+  the owner drove it: USB fan, slot 1, `HELLO WILLIE`, Connect, Send. Receipt: "Wrote 40
+  reports …" (the full line, with the acknowledgement count and timing, and the `.hex` log
+  of every report and reply, are the owner's to supply; the app's sandbox container is
+  unreadable from every shell on this Mac, including the owner's terminal).
+- **Swap.** Data cable out, power in, switched on. Verbatim: **"HELLO WILLIE is showing,
+  upright and readable."** Then: **"slots 2 to 8 gone."**
+- **What that settles.** The reimplemented protocol is correct; image row 0 is the tip and
+  column 0 the left; our 5x7 font at a 6-column pitch reads on the real disc; and a send
+  defines the fan's whole stored set, so unsent slots are cleared, not preserved, which
+  matches a reference driver that numbers images from 0 and never pads.
+- **Uppercase only.** The message was sent with the uppercase-only table; capitals on the
+  disc are the font, not the protocol. D18 has not landed.
+- **The wire.** Bytes sent are the golden stream `Tools/PearlFanGolden/golden/golden-hello-willie.hex`,
+  which the encoder is tested to produce.
+
+Thirteen cable swaps in the project's history; this was the first to show anything, and it
+was the first well-formed image the family's firmware ever received from this repository.
+
+## Open items for the architect
+
+1. **One Send clears the other seven slots.** The app sends one message per Send. Either Send
+   should write all eight slots (empty ones as blank images or omitted), or the UI should say
+   what a send does. A product decision, not made here.
+2. **Effects.** Fixed at the reference defaults. The header carries open, close and
+   before-close fields with known codes; exposing them is a UI question.
+3. **D18, lowercase.** Now a fidelity matter with a working fan behind it.
+4. **The acknowledgement result** stays open in this report until the owner supplies the
+   receipt line and the `.hex` log; the findings will be updated then.
 
 ## Where the brief was wrong
 
-*(completed with the results)*
+1. **"The Swift output equals pearlfan-rs's output byte for byte" for text inputs.** The two
+   projects have different fonts, so text cannot be the shared input. The golden tests share
+   the pixel grid instead: our rasterizer's columns drawn through the reference library's
+   own `draw_point`, then framed as its `send_animation` frames them. The bytes are the
+   contract; the font is ours.
+2. **"A dry-run mode or a test harness."** pearlfan-rs has neither; its tests need a device.
+   A scratch harness against the library (`Tools/PearlFanGolden/`) generated the reference
+   bytes; the data-packet chunking is transcribed from `device.rs` because the library
+   couples it to an open HID handle, and the header comes from the library directly.
+3. **The empty-slot input.** The reference draws no image for empty text. The encoder sends a
+   blank image instead, so a slot can be cleared; the golden for "empty" is a blank image.
+4. **"Keep `GenerationTwoTableSerializer` selectable" through `MessageTableSerializing`.**
+   The PearlFan shape (header plus 39 fixed reports per image) is not a byte table, so the
+   seam moved up one level to `FanReportEncoding`; both writers conform there, as D17 allowed.
+5. **The interrupt-IN read "treats a failed read as an error"** (findings, 2026-09-22). In
+   pearlfan-rs a timeout returns zero bytes and continues; only a HID error aborts. The
+   transport matches that.
+6. **The addendum's mini-CD.** Could not be read; recorded and skipped, as permitted.
+7. **The UI-test runner** could not enable automation mode during this slice (a macOS
+   session condition), so the hardware checklist test did not drive the send; the owner
+   drove the app. Unit tests, golden tests included, are green; the UI suite last passed in
+   slice 8 and its sources changed only in copy assertions.

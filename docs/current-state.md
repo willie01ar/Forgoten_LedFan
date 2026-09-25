@@ -12,10 +12,9 @@ tops at the rim, short messages centred on the top of the disc, messages longer 
 revolution scrolling as a marquee with a dark gap before they wrap. Characters with no
 glyph are named in a caption and drawn blank. Over-length drafts are refused visibly and
 never cut. The eight drafts and the selected slot survive relaunch. The simulated fan
-stores messages per slot and confirms with a time-stamped line. The USB fan connects,
-reports itself, and states plainly that the message format the app implements belongs to a
-different generation of fan; Send writes the table anyway, logs the exact packets, and
-reports "no acknowledgement", never success.
+stores messages per slot and confirms with a time-stamped line. The USB fan connects and
+Send writes the message as a PearlFan-protocol image, logs every packet with any reply, and
+reports what happened. On 2026-09-25 the first send displayed `HELLO WILLIE` on the fan.
 
 **What is blocked, and why.** Sending a message to the physical fan. The head is a
 write-only HID device on the rotating hub whose stored-table format was never found: every

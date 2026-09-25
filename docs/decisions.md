@@ -209,6 +209,11 @@ presentation layer.
 ## D9 — The app never writes to the fan until the table format is known
 **2026-09-02. Safety decision. Non-negotiable.**
 
+*How it ended (2026-09-25).* Relaxed by D16 for the wrong-generation table, then made moot
+by D17: the real protocol turned out to be published, the app's first well-formed send
+displayed `HELLO WILLIE` on the replacement head, and the rule this decision protected,
+"no blind writes from the app", still holds because the app now emits only complete images.
+
 Blind writes erased the factory demo. That was an acceptable cost in a *tools* session with
 the owner present and consenting. It must never happen from the app.
 
