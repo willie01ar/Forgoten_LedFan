@@ -4,6 +4,49 @@ Architect decisions. Newest first. A decision here overrides anything older in t
 
 ---
 
+## D18 — Add lowercase glyphs to `GlyphFont`
+**2026-09-25. Prompted by the factory demo transcription.**
+
+The device's own demo shows mixed case, so its firmware font has lowercase. Ours does not:
+every character is uppercased before lookup, which would turn `Mom Pick me up @4P` into
+`MOM PICK ME UP @4P`. For a product whose demo calls itself a *NOTE PAD*, that is a visible
+loss of fidelity, not a rounding error.
+
+**Decision.** Extend the 5x7 table with lowercase a-z. It is a data change to one type — no
+contract moves, no architecture impact. Keep the uppercase fallback for any character still
+missing a glyph.
+
+Descenders (g j p q y) need rows below the baseline. The glyph box is 7 rows and the arm is
+11 LEDs, so the composer's vertical centring has room; verify a descender renders below the
+baseline of its neighbours rather than being clipped or shifted.
+
+Not a blocker for slice 9 — it can land alongside or after. Say so in the report either way.
+
+---
+
+## D17 — Implement the PearlFan protocol, the real one for our head
+**2026-09-22. Supersedes the "stalled" status of the hardware chapter.**
+
+Public drivers exist for `0c45:7701` (see `protocol-findings.md`, 2026-09-22). Add a
+`PearlFanProtocol`: a `MessageTableSerializing` conformance (or a sibling type, if the
+per-image header-plus-39-packets shape doesn't fit that seam) that emits exactly the packet
+stream pearlfan-rs sends. Make it the hardware transport's default, and keep
+`GenerationTwoTableSerializer` as the documented alternative.
+
+**Licensing is a hard rule.** Ventto/pearlfan is GPLv3, and nothing from it may be copied into
+this repository. pearlfan-rs is MIT/Apache-2.0 and may be read. Reimplement from the protocol
+facts and credit both projects in the README.
+
+**Validate against the reference before touching the fan.** Our encoder's bytes must match
+pearlfan-rs's bytes for the same input, byte for byte. Only then does anything go to the
+head.
+
+The interrupt-IN read after each packet is part of the reference protocol. Implement it with a
+timeout. If acknowledgements start arriving once the framing is right, that's the live
+oracle, so record it.
+
+---
+
 ## D16 — The writer gets a real implementation, and D9 is relaxed
 **2026-09-03. Owner's decision, at his request. Supersedes D9.**
 

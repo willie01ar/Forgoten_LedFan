@@ -1,5 +1,11 @@
 # Protocol discovery
 
+**SOLVED IN PRINCIPLE 2026-09-22.** Two open-source drivers exist for `0c45:7701`:
+Ventto/pearlfan (C, GPLv3) and pearlfan-rs (Rust, MIT/Apache, `VID 0x0C45`, `PID 0x7701`). The
+header opcode is `A0`. See `protocol-findings.md`, 2026-09-22. Everything below is kept as
+the record of how the search went. The next step is implementation, not discovery.
+
+
 **CLOSED 2026-09-03, and this time the state space is exhausted.**
 The last untested configuration — both cables connected with the fan switched ON — was
 tried and eliminated. It enumerates, a tip LED lights steady blue, 233 packets went in with

@@ -902,3 +902,136 @@ been tried.
 
 **What remains is not experimental.** Only the "USB Fan Version 3.0" editor — or a USB
 capture of one programming a `0x7701` fan — can move this now. That is a search, not a test.
+
+---
+
+## 2026-09-22 — THE PROTOCOL EXISTS IN PUBLIC. Our fan has two open-source drivers.
+
+Found while looking for a replacement fan to buy. Every earlier search looked for `0c45:7701`
+or the vendor software. The drivers never print the PID in their READMEs, so they never came up.
+
+- **Ventto/pearlfan** — https://github.com/Ventto/pearlfan — C, libusb, GPLv3. "GNU/Linux kernel
+  driver and libusb app for a Pearl's USB LED fan", article **PX5939**. The README says images
+  are **11 x 156 pixels, at most 8 images**. 156 = 26 characters x 6 columns, so this is our
+  fan's exact geometry.
+- **pearlfan-rs** — https://github.com/mwja/pearlfan-rs — Rust port, **MIT / Apache-2.0**.
+  docs.rs: `pub const VID: u16 = 0x0C45;` and `pub const PID: u16 = 0x7701;`.
+  **That is our head.**
+
+### Protocol, as described (source not copied; the C project is GPLv3)
+- Transport: HID SET_REPORT over the control pipe. `bmRequestType 0x21`, `bRequest 9`,
+  `wValue 0x0200` (output report, ID 0), `wIndex 0`, **8 bytes**. The same as our
+  `IOHIDDeviceSetReport(kIOHIDReportTypeOutput, 0, …, 8)`.
+- After **every** packet the driver reads 8 bytes from interrupt endpoint **0x81** with a
+  1000 ms timeout, and treats a failed read as an error. We have never seen an input report,
+  but we never sent a correctly framed stream either. This may be the live acknowledgement we
+  concluded did not exist. Test it.
+- Per image (up to 8): **one header packet, then 39 data packets.**
+- Header: the 64-bit constant `0x00000055000010A0`, OR'd with a 16-bit effect field shifted
+  left by 16 (close effect, open effect << 4, image id << 8, before-close effect << 12). Sent
+  from a little-endian host, the header on the wire is roughly
+  `A0 10 <close | open<<4> <id | beforeClose<<4> 55 00 00 00`.
+  **The first byte is `A0`, the only header our head has ever reacted to.**
+- Data: 39 packets x 4 columns = 156 columns, 16-bit per column, 11 pixels.
+- Exact bit order, LED polarity, word endianness and effect codes: read them from
+  `pearlfan-rs` (permissive licence) during implementation. **Do not copy code from the GPLv3
+  C project.** Reimplement from the facts.
+
+### Consistency with our own findings
+- `A0` is the only processed header. **Explained**: it is the header opcode.
+- The factory demo was erased by a sweep of every two-byte header with a `FF` payload. That
+  sweep sent `A0 10 …` packets followed by garbage, which is enough to overwrite image slots.
+  **Explained.**
+- The generation-2 (0x7160) formats did nothing. **Explained**: different protocol.
+- Issue #11 on pearlfan: a user with a `0c45:7160` "XY-SUN XY LED FAN" got "Device can not be
+  opened or found". That confirms pearlfan targets 0x7701 and not the generation-2 PID.
+
+### Why we missed it
+"No prior art" (2026-09-01) was a conclusion drawn from searches for the numeric ID and the
+vendor software. The drivers name the *retailer's product*, not the chip ID. The search that
+worked started from the product (PEARL, 26 characters), which we had already found in lead B,
+and never pointed at GitHub.
+
+---
+
+## 2026-09-22 (later) — The original head is destroyed; buying a replacement
+
+The head was opened to try to read the chip and was damaged beyond use. The board photo
+settles one thing permanently: **there is no external EEPROM.** A single unmarked ~24-pin
+SSOP MCU (`U1`), a micro-USB socket, a Schottky (`D1`, "S4"), one 470R and five capacitors,
+with an FPC ribbon to the blade. Message storage is internal to the MCU, so no clip-on
+programmer could ever have read it. Route 1b was never viable — the "cannot open the head"
+constraint cost us nothing.
+
+### Protocols we can now target
+| VID:PID | Source | Status |
+|---|---|---|
+| `0c45:7701` | Ventto/pearlfan (GPLv3), pearlfan-rs (MIT/Apache) | Best supported. Our original fan. |
+| `0c45:7160` | Our own slice-5 analysis of the vendor editor, plus `GenerationTwoTableSerializer` | Complete byte-level map |
+| `1a86:5537` | marcin-osowski/usb_fan (UF-211) | Public reimplementation |
+
+Three of the common OEM designs are covered, so an arbitrary cheap programmable POV fan has
+good odds of being one of them.
+
+### Buying notes (2026-09-22)
+- Jaycar **GH1031** (the fan `fergofrog/microwave_usb_fan` targets): **sold out** in AU at
+  A$6.95. A US Jaycar listing exists but stock unconfirmed.
+- **PowerTRC LED Programmable Message Fan** is in stock on Amazon US in several colours and
+  in 2-packs. Same family description as the northridgefix listing: gooseneck, "8 messages,
+  26 letters", ships with a 3" CD and a separate programmable USB cable. The 8x26 spec is the
+  `0c45:7701` signature.
+- No listing states a USB ID, so the PID is unconfirmed until it arrives. Buy returnable.
+
+### On arrival — do this in order
+1. **Do not connect the data cable yet.** Power the fan, run the factory demo, and record a
+   video of it. That is both proof it works and known plaintext.
+2. Then attach the data cable and run
+   `ioreg -c IOUSBHostDevice -r -w0 | grep -iA4 -E "sonix|1a86"`.
+3. Report the VID:PID. `0c45:7701` goes straight to slice 9 unchanged.
+
+### Two replacement fans ordered (2026-09-22, arriving 2026-09-23)
+PowerTRC LED Programmable Message Fan, green, **two units**.
+
+**Fan policy — this is the structural change the project never had.**
+- **Fan A: the working unit.** Everything is tried on A. It may be erased, bricked or opened.
+- **Fan B: the sealed reference.** Never connect a data cable to B. Never send it a byte.
+  B exists to answer "is this behaviour the device or is it something we did?" — the
+  known-good control that was missing from day one, when the factory demo was erased
+  before anyone thought to record it.
+- Promote B to A only after A is unusable, and say so in the findings when you do.
+
+**Before A's data cable is ever connected:** power it, run the factory demo, and **transcribe
+all 8 messages as text, character for character**. Record a video too if it helps you read
+them back, but the transcription is the artefact that matters — it is the known plaintext this
+project lacked for three weeks, and it is what can be searched for in a memory dump or a
+traffic capture. Do the same for B before it goes back in its box.
+
+(Note for whoever asks for this next: the architect can read still images, not video. Ask for
+the text, or for stills.)
+
+### 2026-09-23 — Replacement fan confirmed as `0c45:7701`
+Fan A (PowerTRC, green) enumerates as `idVendor 3141` (0x0C45, "SONiX"), `idProduct 30465`
+(**0x7701**). Identical to the original head, and the PID that `pearlfan` / `pearlfan-rs`
+target. Slice 9 applies unchanged — no new protocol work, no new transport.
+
+The `8 messages x 26 characters` capability spec on the listing proved a reliable proxy for
+this PID. Worth reusing if another unit is ever needed.
+
+### 2026-09-25 — Fan A's factory demo, transcribed (KNOWN PLAINTEXT)
+Recorded from the owner's observation before any write. This is the Rosetta stone the
+project lacked from day one: if the fan's memory is ever dumped, or its traffic captured
+from the vendor software, these strings are what to look for in the bytes.
+
+Observed order:
+1. `Hello World. I hold 8 Msg.`   <- exactly 26 characters, the full width
+2. `26 letters in each Msg`
+3. `I'm your *NOTE PAD*`
+4. `*Mom Pick me up @4P*`         <- and further examples in the same style
+
+**Character set evidence.** Uppercase, **lowercase**, digits, space, and `. ' * @`.
+Message 1 being exactly 26 characters independently confirms the capability spec.
+
+**Fidelity gap found.** The demo displays **mixed case** ("Hello World", "Mom Pick me up"),
+so the device's font has lowercase glyphs. Our `GlyphFont` is a 5x7 table with no lowercase
+— `columns(for:)` uppercases every character, so we would render "Mom" as "MOM". The table
+does already carry `.`, `'`, `*` and `@`. See decision D18.
