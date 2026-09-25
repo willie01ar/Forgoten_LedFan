@@ -13,6 +13,9 @@ proportional arc centred on the top of the disc and the rest stays dark. Each li
 maps to a dot at a radius between hub and tip, glyph tops at the rim so text on the
 upper arc reads upright. A faint ring marks the LED band.
 
+**Send.** The button reads "Send all 8" and a caption under the controls says it publishes all
+eight slots and clears empty ones; the fan's model is the app's model (D19).
+
 **Motion.** A message longer than one revolution scrolls towards the left of the top arc
 at `Motion.scrollColumnsPerSecond`, so new characters enter on the right, and wraps
 through `Motion.scrollGapColumns` of dark. Shorter messages stand still. The preview is a

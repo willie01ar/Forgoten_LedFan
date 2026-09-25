@@ -1,6 +1,6 @@
 """Replicates LedFan's ColumnRasterizer for a golden grid: 5x7 glyphs from GlyphFont.swift,
-1 blank column after each, glyph top at row 2 of an 11-row arm, uppercased lookup, blank
-for unknown characters. Output: 156 columns, each 11 chars of 0/1, y=0 top. Usage:
+1 blank column after each, glyph top at row 2 of an 11-row arm, exact then uppercase
+lookup, blank for unknown characters. Output: 156 columns, each 11 chars of 0/1, y=0 top. Usage:
   python3 grid.py GlyphFont.swift "TEXT"     (empty TEXT -> blank image)"""
 import re, sys
 src = open(sys.argv[1]).read(); text = sys.argv[2]
@@ -11,7 +11,8 @@ for m in re.finditer(r'"((?:\\"|[^"])+)": \[(.*?)\]', src):
 columns = []
 for ch in text:
     up = ch.upper()
-    glyph = table.get(up) if len(up) == 1 else None
+    glyph = table.get(ch)
+    if glyph is None: glyph = table.get(up) if len(up) == 1 else None
     glyph = glyph if glyph is not None else [0] * 5
     columns += [(g << 2) & 0x7FF for g in glyph] + [0]
 columns += [0] * (156 - len(columns))

@@ -1231,3 +1231,47 @@ Two facts for the app, not the protocol: a torn-down device answers `SetReport` 
 `kIOReturnBadArgument`, not `kIOReturnNoDevice`; and the transport needs to notice removal
 (`IOHIDDeviceRegisterRemovalCallback`, or treating that code as "reconnect") so a user who
 has just swapped cables is not shown a dead "Connected".
+
+---
+
+## 2026-09-25 — Slice 10: the header's effect codes, and what the app does with them
+
+Transcribed from pearlfan-rs `src/effects.rs` (commit `3d9b32c`) so they are not lost. The
+header is `A0 10 <close | open<<4> <imageID | beforeClose<<4> 55 00 00 00`.
+
+| Field | Bits of the options word | Code | Meaning |
+|---|---|---|---|
+| close | 0–3 | 0 | disappears left-to-right (default) |
+| | | 1 | disappears right-to-left |
+| | | 2 | both sides at once |
+| | | 3 | "red carpet" |
+| | | 4 | top-to-bottom |
+| | | 5 | bottom-to-top |
+| | | 6 | *invalid for close* (fast mode) |
+| open | 4–7 | 0 | appears right-to-left (default) |
+| | | 1 | appears left-to-right |
+| | | 2 | both sides at once |
+| | | 3 | "red carpet" |
+| | | 4 | top-to-bottom |
+| | | 5 | bottom-to-top |
+| | | 6 | fast mode, no transition |
+| image id | 8–11 | 0–7 | the slot; the reference numbers sent images from 0 |
+| before close | 12–15 | 0 | none, "remain" (default) |
+| | | 2 | turn left-to-right, "clockwise" |
+| | | 6 | turn right-to-left, "anticlockwise" |
+
+The vendor UI's "flash 3 times" has no code in the reference. The app keeps all three at
+their defaults (D19); `PearlFanEffects` carries the codes for when a control is wanted.
+
+### What a Send now does (D19, D20, D21)
+- **Publishes all eight slots** in one session, ids 0–7 in slot order, empty slots as blank
+  images, so the fan's stored set always equals the app's eight drafts. 320 reports.
+- **Verifies every echo.** Each report's echo must equal the report, or equal it with bit 0
+  of the first byte set (the header's `A0` → `A1`). The receipt counts confirmed, differing
+  and missing echoes and says "Every report was confirmed by the fan's echo" only when all
+  were. A mismatch never aborts a send.
+- **Notices removal.** `IOHIDDeviceRegisterRemovalCallback` marks the device gone and the
+  transport raises a `lost` event; the ViewModel drops to Disconnected by itself. If the
+  callback is late, `SetReport` answering `kIOReturnBadArgument`, `kIOReturnNotOpen`,
+  `kIOReturnNoDevice`, `kIOReturnNotAttached` or `kIOReturnOffline` is treated the same way:
+  "The fan was unplugged", never "the write failed".

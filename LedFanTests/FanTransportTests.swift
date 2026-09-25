@@ -13,21 +13,19 @@ struct FanTransportTests {
         let transport = SimulatedFanTransport()
         let message = try message()
         await #expect(throws: FanTransportError.notConnected) {
-            try await transport.store(message)
+            try await transport.store([message])
         }
     }
 
     @Test func connectingThenStoringSucceedsAndIsRetainedPerSlot() async throws {
         let transport = SimulatedFanTransport()
         try await transport.connect()
-        let receipt = try await transport.store(message("ONE", slot: 0))
-        #expect(receipt.summary == "Stored in slot 1 on the simulated fan.")
-        #expect(receipt.acknowledged)
-        _ = try await transport.store(message("TWO", slot: 1))
-        _ = try await transport.store(message("THREE", slot: 0))
+        let receipt = try await transport.store([message("ONE", slot: 0), message("TWO", slot: 1)])
+        #expect(receipt.summary == "Stored 2 slots on the simulated fan, 2 with text.")
+        _ = try await transport.store([message("THREE", slot: 0)])
 
         #expect(await transport.message(inSlot: 0)?.text == "THREE")
-        #expect(await transport.message(inSlot: 1)?.text == "TWO")
+        #expect(await transport.message(inSlot: 1) == nil, "a store replaces the whole set, like the fan")
         #expect(await transport.message(inSlot: 2) == nil)
     }
 
@@ -36,7 +34,7 @@ struct FanTransportTests {
         await transport.disconnect()
         let message = try message()
         await #expect(throws: FanTransportError.notConnected) {
-            try await transport.store(message)
+            try await transport.store([message])
         }
     }
 
@@ -44,7 +42,7 @@ struct FanTransportTests {
         let transport = SimulatedFanTransport()
         let message = try message("HI", slot: 4)
         try await transport.connect()
-        _ = try await transport.store(message)
+        _ = try await transport.store([message])
 
         var stored = transport.storedMessages.makeAsyncIterator()
         #expect(await stored.next() == message)
@@ -74,22 +72,32 @@ struct FanTransportTests {
         let transport = HIDFanTransport(packetLogDirectory: nil)
         let message = try message()
         await #expect(throws: FanTransportError.notConnected) {
-            try await transport.store(message)
+            try await transport.store([message])
         }
     }
 
     @Test func theReceiptSaysWhatHappenedAndNeverClaimsSuccess() {
-        let silent = HIDFanTransport.receiptSummary(reportCount: 40, byteCount: 320, acknowledged: 0, elapsed: .seconds(40))
-        let partial = HIDFanTransport.receiptSummary(reportCount: 40, byteCount: 320, acknowledged: 39, elapsed: .milliseconds(1300))
-        #expect(silent.contains("40 reports"))
-        #expect(silent.contains("320 bytes"))
-        #expect(silent.contains("40.0 s"))
-        #expect(silent.contains("No acknowledgement came back"))
-        #expect(partial.contains("acknowledged 39 of 40"))
-        #expect(partial.contains("1.3 s"))
-        for copy in [silent, partial, HIDFanTransport.caveat] {
+        let all = HIDFanTransport.receiptSummary(messageCount: 8, reportCount: 320, byteCount: 2560,
+                                                 verification: EchoVerification(confirmed: 320, mismatched: 0, missing: 0), elapsed: .seconds(5))
+        let some = HIDFanTransport.receiptSummary(messageCount: 8, reportCount: 320, byteCount: 2560,
+                                                  verification: EchoVerification(confirmed: 300, mismatched: 5, missing: 15), elapsed: .milliseconds(20300))
+        let none = HIDFanTransport.receiptSummary(messageCount: 8, reportCount: 320, byteCount: 2560,
+                                                  verification: EchoVerification(confirmed: 0, mismatched: 0, missing: 320), elapsed: .seconds(320))
+        #expect(all.contains("Published all 8 slots"))
+        #expect(all.contains("320 reports"))
+        #expect(all.contains("Every report was confirmed by the fan's echo"))
+        #expect(some.contains("300 of 320 reports confirmed by echo; 5 differed, 15 missing"))
+        #expect(none.contains("No echo came back"))
+        for copy in [all, some, none, HIDFanTransport.caveat] {
             #expect(!Self.hasUnqualifiedSuccessLanguage(copy), "copy reads as success: \(copy)")
         }
+    }
+
+    @Test func theUnpluggedCopySaysWhatToDoAndDoesNotBlameTheWrite() {
+        let copy = FanTransportError.deviceRemoved.localizedDescription
+        #expect(copy.contains("unplugged"))
+        #expect(copy.contains("Connect again"))
+        #expect(!copy.lowercased().contains("rejected"))
     }
 
     /// "sent", "success", "done", "delivered" or "displayed" with nothing qualifying them.
@@ -105,7 +113,7 @@ struct FanTransportTests {
 
     @Test func everyTransportErrorHasAHumanReadableDescription() {
         let errors: [FanTransportError] = [
-            .deviceNotFound, .openFailed(code: -1), .notConnected, .writeFailed(code: -2),
+            .deviceNotFound, .openFailed(code: -1), .notConnected, .deviceRemoved, .writeFailed(code: -2),
             .nothingToStore, .tableTooLarge(bytes: 3000, limit: 2048), .imageTooWide(columns: 157, limit: 156)
         ]
         for error in errors {

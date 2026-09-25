@@ -34,6 +34,7 @@ final class FanMessageViewModel {
     private let previewGeometry: FanGeometry
     private var transport: any FanDisplayTransport
     private var strip: ColumnStrip = .empty(ledsPerArm: 0)
+    private var connectionWatch: Task<Void, Never>?
 
     init(transportProvider: any FanTransportProviding = DefaultFanTransportProvider(),
          rasterizer: any MessageRasterizing = ColumnRasterizer(),
@@ -76,6 +77,21 @@ final class FanMessageViewModel {
         return FanMessageError.tooLong(by: excessCharacters).localizedDescription
     }
 
+    /// Slots other than the selected one that are over the limit; Send publishes all eight.
+    var otherOverLengthSlots: [Int] {
+        slotTexts.indices.filter { $0 != selectedSlot && FanMessage.excessCharacters(in: slotTexts[$0]) > 0 }
+    }
+
+    var otherSlotsProblem: String? {
+        let slots = otherOverLengthSlots
+        guard !slots.isEmpty else { return nil }
+        let names = slots.map { "\($0 + 1)" }.joined(separator: ", ")
+        return "Slot\(slots.count == 1 ? "" : "s") \(names) \(slots.count == 1 ? "is" : "are") over \(FanMessage.maximumCharacters) characters. Send publishes every slot, so fix them first."
+    }
+
+    /// What Send does, in one line, so nobody expects it to add a single message (D19).
+    static let sendExplanation = "Send publishes all eight slots and replaces what the fan holds. Empty slots are cleared."
+
     /// Characters in the draft with no glyph, which the preview draws blank (D4).
     var blankGlyphHint: String? {
         var seen = Set<Character>()
@@ -97,7 +113,7 @@ final class FanMessageViewModel {
     }
 
     var canSend: Bool {
-        status.allowsSending && messageFitsTheFan && storeUnavailableReason == nil
+        status.allowsSending && messageFitsTheFan && otherOverLengthSlots.isEmpty && storeUnavailableReason == nil
     }
 
     var previewDescription: String {
@@ -140,25 +156,30 @@ final class FanMessageViewModel {
             geometry = await transport.geometry
             status = .connected
             refreshPreview()
+            watchConnection()
         } catch {
             status = .failed(error.localizedDescription)
         }
     }
 
     func disconnect() async {
+        stopWatchingConnection()
         await transport.disconnect()
         status = .disconnected
     }
 
     // MARK: - Actions
 
+    /// Publishes all eight slots (D19): the fan keeps exactly what it is last given.
     func sendMessage() async {
         guard canSend else { return }
         lastError = nil
         do {
-            let fanMessage = try FanMessage(slot: selectedSlot, text: message)
-            let receipt = try await transport.store(fanMessage)
+            let messages = try slotTexts.enumerated().map { try FanMessage(slot: $0.offset, text: $0.element) }
+            let receipt = try await transport.store(messages)
             lastStored = "\(Date.now.formatted(date: .omitted, time: .standard)): \(receipt.summary)"
+        } catch FanTransportError.deviceRemoved {
+            connectionLost(FanTransportError.deviceRemoved.localizedDescription)
         } catch {
             lastError = error.localizedDescription
         }
@@ -187,7 +208,31 @@ final class FanMessageViewModel {
         }
     }
 
+    /// The transport tells us when the fan goes away (D21); Send disables by itself.
+    private func watchConnection() {
+        stopWatchingConnection()
+        let events = transport.connectionEvents
+        connectionWatch = Task { [weak self] in
+            for await event in events {
+                guard !Task.isCancelled, let self else { return }
+                if case .lost(let reason) = event { self.connectionLost(reason) }
+            }
+        }
+    }
+
+    private func stopWatchingConnection() {
+        connectionWatch?.cancel()
+        connectionWatch = nil
+    }
+
+    private func connectionLost(_ reason: String) {
+        stopWatchingConnection()
+        status = .disconnected
+        lastError = reason
+    }
+
     private func replaceTransport() {
+        stopWatchingConnection()
         let previous = transport
         transport = transportProvider.makeTransport(for: transportKind)
         status = .disconnected

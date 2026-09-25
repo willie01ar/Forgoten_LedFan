@@ -97,9 +97,13 @@ struct ContentView: View {
         if let problem = viewModel.lengthProblem {
             Caption(text: problem, systemImage: "exclamationmark.circle.fill", tint: Palette.error, prefix: "Problem")
         }
+        if let problem = viewModel.otherSlotsProblem {
+            Caption(text: problem, systemImage: "exclamationmark.circle.fill", tint: Palette.error, prefix: "Problem")
+        }
         if let hint = viewModel.blankGlyphHint {
             Caption(text: hint, systemImage: "character.textbox", tint: .secondary, prefix: "Note")
         }
+        Caption(text: FanMessageViewModel.sendExplanation, systemImage: "square.stack.3d.up", tint: .secondary, prefix: "Note")
         if let reason = viewModel.storeUnavailableReason {
             Caption(text: reason, systemImage: "info.circle", tint: .secondary, prefix: "Note")
         }
@@ -127,12 +131,12 @@ struct ContentView: View {
                 .accessibilityLabel("Connect to the fan")
             }
 
-            Button("Send") {
+            Button("Send all 8") {
                 Task { await viewModel.sendMessage() }
             }
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.canSend)
-            .accessibilityLabel("Send the message to the fan")
+            .accessibilityLabel("Send all eight slots to the fan")
         }
     }
 }

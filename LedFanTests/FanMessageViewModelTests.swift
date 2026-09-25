@@ -6,34 +6,46 @@ import Testing
 actor RecordingTransport: FanDisplayTransport {
     nonisolated let displayName = "Recording"
     nonisolated let storeAvailability: FanStoreAvailability
-    private(set) var storedMessages: [FanMessage] = []
+    nonisolated let connectionEvents: AsyncStream<FanConnectionEvent>
+    private let events: AsyncStream<FanConnectionEvent>.Continuation
+    private(set) var storedSets: [[FanMessage]] = []
     private(set) var connectCount = 0
     private(set) var disconnectCount = 0
     private let fanGeometry: FanGeometry
     private let connectShouldFail: Bool
-    private let storeShouldFail: Bool
+    private let storeError: FanTransportError?
+    private let receipt: FanStoreReceipt?
 
     init(geometry: FanGeometry = .preview,
          connectShouldFail: Bool = false,
-         storeShouldFail: Bool = false,
-         storeAvailability: FanStoreAvailability = .available) {
+         storeError: FanTransportError? = nil,
+         storeAvailability: FanStoreAvailability = .available,
+         receipt: FanStoreReceipt? = nil) {
         fanGeometry = geometry
         self.connectShouldFail = connectShouldFail
-        self.storeShouldFail = storeShouldFail
+        self.storeError = storeError
         self.storeAvailability = storeAvailability
+        self.receipt = receipt
+        let stream = AsyncStream.makeStream(of: FanConnectionEvent.self)
+        connectionEvents = stream.stream
+        events = stream.continuation
     }
 
     var geometry: FanGeometry { fanGeometry }
+    var storedMessages: [FanMessage] { storedSets.last ?? [] }
+
+    /// Simulates the fan being unplugged.
+    nonisolated func unplug() { events.yield(.lost(reason: FanTransportError.deviceRemoved.localizedDescription)) }
 
     func connect() async throws {
         connectCount += 1
         if connectShouldFail { throw FanTransportError.deviceNotFound }
     }
 
-    func store(_ message: FanMessage) async throws -> FanStoreReceipt {
-        if storeShouldFail { throw FanTransportError.writeFailed(code: -536870201) }
-        storedMessages.append(message)
-        return FanStoreReceipt(summary: "Recorded slot \(message.displayNumber).", reportCount: 0, byteCount: 0, acknowledged: true)
+    func store(_ messages: [FanMessage]) async throws -> FanStoreReceipt {
+        if let storeError { throw storeError }
+        storedSets.append(messages)
+        return receipt ?? FanStoreReceipt(summary: "Recorded \(messages.count) slots.", reportCount: 0, byteCount: 0, confirmedCount: 0)
     }
 
     func disconnect() async { disconnectCount += 1 }
@@ -166,7 +178,6 @@ struct FanMessageViewModelTests {
         let onePeriodLater = viewModel.previewFrame(at: viewModel.scrollEpoch.addingTimeInterval(period))
         #expect(onePeriodLater == viewModel.previewFrame, "after one full period the marquee is back at the start")
 
-        // Just before the message's tail leaves, the gap is dark where the head would otherwise touch it.
         let advance = strip.columns.count
         let frame = viewModel.previewFrame(at: viewModel.scrollEpoch.addingTimeInterval(Double(advance) / Motion.scrollColumnsPerSecond))
         #expect(frame.columns[0..<Motion.scrollGapColumns].allSatisfy { $0 == 0 })
@@ -258,19 +269,33 @@ struct FanMessageViewModelTests {
         #expect(!viewModel.canSend)
         await viewModel.sendMessage()
 
-        #expect(await transport.storedMessages.isEmpty)
+        #expect(await transport.storedSets.isEmpty)
         #expect(viewModel.message == twentySix + "?", "the draft must not be silently cut")
+    }
+
+    @Test func anOverLengthDraftInAnotherSlotBlocksSendAndIsNamed() async {
+        let viewModel = viewModel()
+        await viewModel.connect()
+        viewModel.selectedSlot = 2
+        viewModel.message = twentySix + "?"
+        viewModel.selectedSlot = 0
+        viewModel.message = "FINE"
+
+        #expect(viewModel.lengthProblem == nil)
+        #expect(viewModel.otherOverLengthSlots == [2])
+        #expect(viewModel.otherSlotsProblem?.contains("Slot 3 is over 26") == true)
+        #expect(!viewModel.canSend)
     }
 
     @Test func blankGlyphsAreNamedOnce() {
         let viewModel = viewModel()
         viewModel.message = "HÉLLO 🙂🙂"
         #expect(viewModel.blankGlyphHint == "No glyph for “É”, “🙂”. Shown blank.")
-        viewModel.message = "HELLO"
-        #expect(viewModel.blankGlyphHint == nil)
+        viewModel.message = "Hello"
+        #expect(viewModel.blankGlyphHint == nil, "lowercase has glyphs now")
     }
 
-    // MARK: - Sending
+    // MARK: - Sending publishes all eight slots (D19)
 
     @Test func sendingIsBlockedUntilConnected() async {
         let transport = RecordingTransport()
@@ -279,22 +304,41 @@ struct FanMessageViewModelTests {
 
         await viewModel.sendMessage()
 
-        #expect(await transport.storedMessages.isEmpty)
+        #expect(await transport.storedSets.isEmpty)
         #expect(!viewModel.canSend)
     }
 
-    @Test func connectingThenSendingStoresTheSelectedSlot() async throws {
+    @Test func sendWritesAllEightSlotsInOrderWithEmptyOnesBlank() async throws {
         let transport = RecordingTransport()
         let viewModel = viewModel(transport: transport)
         viewModel.selectedSlot = 4
         viewModel.message = "FIVE"
+        viewModel.selectedSlot = 0
+        viewModel.message = "ONE"
 
         await viewModel.connect()
         await viewModel.sendMessage()
 
-        #expect(viewModel.status == .connected)
-        #expect(await transport.storedMessages == [try FanMessage(slot: 4, text: "FIVE")])
-        #expect(viewModel.lastStored?.hasSuffix("Recorded slot 5.") == true, "the receipt's own words, after the time")
+        let sent = await transport.storedMessages
+        #expect(sent.count == FanMessage.slotCount)
+        #expect(sent.map(\.slot) == Array(0..<8))
+        #expect(sent.map(\.text) == ["ONE", "", "", "", "FIVE", "", "", ""])
+        #expect(viewModel.lastStored?.hasSuffix("Recorded 8 slots.") == true)
+    }
+
+    @Test func theExplanationSaysSendReplacesEverything() {
+        #expect(FanMessageViewModel.sendExplanation.contains("all eight slots"))
+        #expect(FanMessageViewModel.sendExplanation.contains("Empty slots are cleared"))
+    }
+
+    @Test func theReceiptIsShownVerbatimAfterTheTime() async {
+        let receipt = FanStoreReceipt(summary: "Published all 8 slots: 320 reports. Every report was confirmed by the fan's echo.",
+                                      reportCount: 320, byteCount: 2560, confirmedCount: 320)
+        let viewModel = viewModel(transport: RecordingTransport(receipt: receipt))
+        await viewModel.connect()
+        await viewModel.sendMessage()
+        #expect(viewModel.lastStored?.hasSuffix(receipt.summary) == true)
+        #expect(receipt.everyReportConfirmed)
     }
 
     @Test func connectingAdoptsTheTransportGeometry() async {
@@ -319,7 +363,7 @@ struct FanMessageViewModelTests {
     }
 
     @Test func aFailedStoreSurfacesTheReasonAndStaysConnected() async {
-        let viewModel = viewModel(transport: RecordingTransport(storeShouldFail: true))
+        let viewModel = viewModel(transport: RecordingTransport(storeError: .writeFailed(code: -536870201)))
         viewModel.message = "HI"
 
         await viewModel.connect()
@@ -340,7 +384,7 @@ struct FanMessageViewModelTests {
         #expect(!viewModel.canSend)
         #expect(viewModel.storeUnavailableReason == "Not yet.")
         await viewModel.sendMessage()
-        #expect(await transport.storedMessages.isEmpty)
+        #expect(await transport.storedSets.isEmpty)
     }
 
     @Test func anExperimentalTransportKeepsSendEnabledAndShowsItsCaveat() async {
@@ -354,7 +398,49 @@ struct FanMessageViewModelTests {
         #expect(viewModel.storeCaveat == "Not this generation.")
         #expect(viewModel.storeUnavailableReason == nil)
         await viewModel.sendMessage()
-        #expect(await transport.storedMessages.count == 1)
+        #expect(await transport.storedSets.count == 1)
+    }
+
+    // MARK: - Device removal (D21)
+
+    @Test func aRemovedDeviceOnSendLandsInDisconnectedWithTheUnpluggedCopy() async {
+        let viewModel = viewModel(transport: RecordingTransport(storeError: .deviceRemoved))
+        viewModel.message = "HI"
+        await viewModel.connect()
+        #expect(viewModel.canSend)
+
+        await viewModel.sendMessage()
+
+        #expect(viewModel.status == .disconnected)
+        #expect(!viewModel.canSend)
+        #expect(viewModel.lastError?.contains("unplugged") == true)
+        #expect(viewModel.lastError?.lowercased().contains("rejected") == false)
+    }
+
+    @Test func anUnplugEventDisconnectsOnItsOwn() async {
+        let transport = RecordingTransport()
+        let viewModel = viewModel(transport: transport)
+        await viewModel.connect()
+        #expect(viewModel.status == .connected)
+
+        transport.unplug()
+        await waitUntil { viewModel.status == .disconnected }
+
+        #expect(viewModel.status == .disconnected)
+        #expect(!viewModel.canSend)
+        #expect(viewModel.lastError?.contains("unplugged") == true)
+    }
+
+    @Test func disconnectingStopsListeningForUnplugs() async {
+        let transport = RecordingTransport()
+        let viewModel = viewModel(transport: transport)
+        await viewModel.connect()
+        await viewModel.disconnect()
+
+        transport.unplug()
+        await waitUntil { false }
+
+        #expect(viewModel.lastError == nil, "an unplug after an orderly disconnect is not an error")
     }
 
     @Test func disconnectingReturnsToDisconnected() async {
@@ -404,8 +490,8 @@ struct FanMessageViewModelTests {
         viewModel.message = "A"
         await viewModel.sendMessage()
 
-        #expect(await provider.simulated.storedMessages.count == 1)
-        #expect(await provider.hardware.storedMessages.isEmpty)
+        #expect(await provider.simulated.storedSets.count == 1)
+        #expect(await provider.hardware.storedSets.isEmpty)
     }
 
     @Test func selectingTheSameKindAgainKeepsTheConnection() async {
@@ -444,7 +530,7 @@ struct FanMessageViewModelTests {
 
     // MARK: - Helpers
 
-    /// Saves and the replaced transport's disconnect run in detached tasks; give them a few turns.
+    /// Saves, unplug events and the replaced transport's disconnect run in other tasks; give them a few turns.
     private func waitUntil(_ condition: () async -> Bool) async {
         for _ in 0..<500 where await !condition() {
             await Task.yield()

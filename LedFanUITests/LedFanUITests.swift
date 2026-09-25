@@ -29,7 +29,7 @@ final class LedFanUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Simulated fan: Not connected"].exists)
         XCTAssertTrue(app.otherElements["Fan preview showing HELLO in slot 1"].waitForExistence(timeout: 3))
 
-        let sendButton = app.buttons["Send the message to the fan"]
+        let sendButton = app.buttons["Send all eight slots to the fan"]
         XCTAssertFalse(sendButton.isEnabled, "Send must be disabled until connected")
 
         replaceText(in: messageField, with: twentySixCharacters)
@@ -42,7 +42,7 @@ final class LedFanUITests: XCTestCase {
 
         sendButton.click()
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Error:'")).firstMatch.exists)
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'Stored in slot 1 on the simulated fan'")).firstMatch.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'Stored 8 slots on the simulated fan, 1 with text'")).firstMatch.waitForExistence(timeout: 2))
         attachScreenshot(of: app, named: "Legible preview, dark")
 
         app.buttons["Disconnect from the fan"].click()
@@ -62,7 +62,7 @@ final class LedFanUITests: XCTestCase {
         replaceText(in: messageField, with: twentySixCharacters + "?")
         XCTAssertTrue(app.staticTexts["27 of 26 characters"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS '1 character over'")).firstMatch.exists)
-        XCTAssertFalse(app.buttons["Send the message to the fan"].isEnabled)
+        XCTAssertFalse(app.buttons["Send all eight slots to the fan"].isEnabled)
         XCTAssertEqual(messageField.value as? String, twentySixCharacters + "?", "the draft must not be cut")
     }
 
@@ -95,6 +95,29 @@ final class LedFanUITests: XCTestCase {
         app.buttons["Connect to the fan"].click()
         XCTAssertTrue(app.staticTexts["Simulated fan: Connected"].waitForExistence(timeout: 5))
         attachScreenshot(of: app, named: "Legible preview, light")
+    }
+
+    // MARK: - Lowercase evidence (D18)
+
+    @MainActor
+    func testTheFactoryDemoLineRendersInMixedCaseDark() throws {
+        try captureDemoLine(light: false)
+    }
+
+    @MainActor
+    func testTheFactoryDemoLineRendersInMixedCaseLight() throws {
+        try captureDemoLine(light: true)
+    }
+
+    @MainActor
+    private func captureDemoLine(light: Bool) throws {
+        let app = launch(light: light)
+        let messageField = app.textFields["Message to display on the fan"]
+        XCTAssertTrue(messageField.waitForExistence(timeout: 5))
+        replaceText(in: messageField, with: "*Mom Pick me up @4P*")
+        XCTAssertTrue(app.otherElements["Fan preview showing *Mom Pick me up @4P* in slot 1"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH 'No glyph'")).firstMatch.exists, "every character has a glyph now")
+        attachScreenshot(of: app, named: "Demo line \(light ? "light" : "dark")")
     }
 
     // MARK: - Scrolling evidence (Milestone 3)

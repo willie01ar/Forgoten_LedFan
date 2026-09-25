@@ -15,9 +15,9 @@ Read this page, then `brief.md`, then the rest in the order `README.md` lists.
 
 ## Where things stand
 
-Finished, as of 2026-09-03. Read `current-state.md` first: it says what the app does,
-what is blocked and why, and where the hardware investigation stands. The hardware
-chapter is stalled on evidence that has to come from outside the repository.
+Working, as of 2026-09-25. Read `current-state.md` first: it says what the app does and
+how the hardware question was settled. The fan's protocol is implemented and verified on
+the device; `protocol-findings.md` is the record.
 
 ## If you pick this up
 

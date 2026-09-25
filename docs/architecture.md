@@ -30,7 +30,8 @@ nonisolated protocol FanDisplayTransport: Sendable {
     var geometry: FanGeometry { get async }
 
     func connect() async throws
-    func store(_ message: FanMessage) async throws -> FanStoreReceipt   // what happened, in words
+    nonisolated var connectionEvents: AsyncStream<FanConnectionEvent> { get }   // .lost(reason:) when unplugged (D21)
+    func store(_ messages: [FanMessage]) async throws -> FanStoreReceipt   // the whole set (D19); what happened, in words
     func disconnect() async
 }
 
@@ -88,9 +89,10 @@ real protocol replaced the placeholder.
 
 `HIDFanTransport` owns the device handle. It opens the device seized as the reference
 driver does, sends the encoder's reports with `IOHIDDeviceSetReport`, waits one second per
-report for an interrupt-IN acknowledgement through `InputReportInbox` (an actor fed by the
-IOKit callback on the main run loop), logs each report with its reply, and returns a
-`FanStoreReceipt`. It declares `storeAvailability = .experimental(caveat:)`; the ViewModel
+report for the fan's echo through `InputReportInbox` (an actor fed by the IOKit callback
+on the main run loop), verifies each echo (`EchoVerification`, D20), observes removal
+through IOKit's removal callback and a `RemovalFlag` actor (D21), logs each report with its
+reply, and returns a `FanStoreReceipt` with the confirmed count. It declares `storeAvailability = .experimental(caveat:)`; the ViewModel
 shows the caveat, keeps Send enabled, and uses the receipt's words as the confirmation line.
 
 ## Concurrency model

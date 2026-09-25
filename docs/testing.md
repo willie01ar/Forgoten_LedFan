@@ -65,8 +65,20 @@ reports, and disconnects.
 - `store(_:)` before `connect()` throws `.notConnected`.
 - `connect()` then `store(_:)` succeeds and is retained per slot.
 - `disconnect()` on a never-connected transport does not trap.
-- The hardware transport reports that it cannot store, in copy that does not blame the
-  user's setup.
+- The hardware transport's copy never claims a display and never blames the user's setup;
+  the unplugged copy says what to do.
+- Echo verification: identical, header with the acknowledgement bit, mismatched, missing.
+
+### ViewModel, additions
+- Send publishes all eight slots in order, empty ones included; an over-length draft in any
+  slot blocks Send and is named.
+- A `.deviceRemoved` error on Send, or a `.lost` event from the transport, lands the
+  ViewModel in Disconnected with the unplugged copy; an orderly disconnect stops listening.
+
+### Font
+- Every lowercase letter has its own glyph; x-height letters end on the baseline,
+  descenders reach one row below it, and a descender next to an x-height letter renders
+  below it without clipping.
 
 `HIDFanTransport` is **not** unit tested — it is a thin adapter over IOKit and there is
 nothing to assert without the device. Keep it thin enough that this is true. If it grows

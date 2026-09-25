@@ -1,24 +1,30 @@
 import Foundation
 
 /// Classic 5x7 column font. Each column byte carries one glyph column, bit 0 at the top.
+/// Lowercase sits on the same baseline (row 6); descenders use row 7, one row below it.
 nonisolated enum GlyphFont {
     static let glyphWidth = 5
     static let glyphHeight = 7
+    /// The row descenders reach, below the baseline.
+    static let descenderRow = 7
 
     static let blankGlyph = [UInt8](repeating: 0, count: glyphWidth)
 
-    /// Case-insensitive lookup. Anything without a glyph is drawn blank, never dropped.
+    /// The character's own glyph, else its uppercase form's, else blank; never dropped.
     static func columns(for character: Character) -> [UInt8] {
-        let uppercased = character.uppercased()
-        guard uppercased.count == 1, let key = uppercased.first else { return blankGlyph }
-        return table[key] ?? blankGlyph
+        glyph(for: character) ?? blankGlyph
     }
 
-    /// True when the character has a glyph (case-insensitive). Space counts: it draws as a gap on purpose.
+    /// True when the character, or its uppercase form, has a glyph. Space counts: it is a gap on purpose.
     static func supports(_ character: Character) -> Bool {
+        glyph(for: character) != nil
+    }
+
+    private static func glyph(for character: Character) -> [UInt8]? {
+        if let exact = table[character] { return exact }
         let uppercased = character.uppercased()
-        guard uppercased.count == 1, let key = uppercased.first else { return false }
-        return table[key] != nil
+        guard uppercased.count == 1, let key = uppercased.first else { return nil }
+        return table[key]
     }
 
     // MARK: - Table
@@ -79,6 +85,32 @@ nonisolated enum GlyphFont {
         "W": [0x3F, 0x40, 0x38, 0x40, 0x3F],
         "X": [0x63, 0x14, 0x08, 0x14, 0x63],
         "Y": [0x07, 0x08, 0x70, 0x08, 0x07],
-        "Z": [0x61, 0x51, 0x49, 0x45, 0x43]
+        "Z": [0x61, 0x51, 0x49, 0x45, 0x43],
+        "a": [0x20, 0x54, 0x54, 0x54, 0x78],
+        "b": [0x7F, 0x48, 0x44, 0x44, 0x38],
+        "c": [0x38, 0x44, 0x44, 0x44, 0x20],
+        "d": [0x38, 0x44, 0x44, 0x48, 0x7F],
+        "e": [0x38, 0x54, 0x54, 0x54, 0x18],
+        "f": [0x08, 0x7E, 0x09, 0x01, 0x02],
+        "g": [0x18, 0xA4, 0xA4, 0xA4, 0x7C],
+        "h": [0x7F, 0x08, 0x04, 0x04, 0x78],
+        "i": [0x00, 0x44, 0x7D, 0x40, 0x00],
+        "j": [0x40, 0x80, 0x84, 0x7D, 0x00],
+        "k": [0x7F, 0x10, 0x28, 0x44, 0x00],
+        "l": [0x00, 0x41, 0x7F, 0x40, 0x00],
+        "m": [0x7C, 0x04, 0x18, 0x04, 0x78],
+        "n": [0x7C, 0x08, 0x04, 0x04, 0x78],
+        "o": [0x38, 0x44, 0x44, 0x44, 0x38],
+        "p": [0xFC, 0x24, 0x24, 0x24, 0x18],
+        "q": [0x18, 0x24, 0x24, 0x24, 0xFC],
+        "r": [0x7C, 0x08, 0x04, 0x04, 0x08],
+        "s": [0x48, 0x54, 0x54, 0x54, 0x20],
+        "t": [0x04, 0x3F, 0x44, 0x40, 0x20],
+        "u": [0x3C, 0x40, 0x40, 0x20, 0x7C],
+        "v": [0x1C, 0x20, 0x40, 0x20, 0x1C],
+        "w": [0x3C, 0x40, 0x30, 0x40, 0x3C],
+        "x": [0x44, 0x28, 0x10, 0x28, 0x44],
+        "y": [0x9C, 0xA0, 0xA0, 0xA0, 0x7C],
+        "z": [0x44, 0x64, 0x54, 0x4C, 0x44]
     ]
 }

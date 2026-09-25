@@ -4,6 +4,7 @@ import Foundation
 ///
 ///   -columnsPerRevolution 120   narrower preview geometry, so a long message scrolls
 ///   -transientStore YES         drafts live in memory; the container is never touched
+///   -seedDrafts "a|b|c"          with the transient store: the eight slots' starting text, pipe-separated
 enum LaunchOptions {
     static var previewGeometry: FanGeometry {
         let columns = UserDefaults.standard.integer(forKey: "columnsPerRevolution")
@@ -12,6 +13,9 @@ enum LaunchOptions {
     }
 
     static var messageStore: any MessageStoring {
-        UserDefaults.standard.bool(forKey: "transientStore") ? TransientMessageStore() : FileMessageStore()
+        guard UserDefaults.standard.bool(forKey: "transientStore") else { return FileMessageStore() }
+        guard let seed = UserDefaults.standard.string(forKey: "seedDrafts") else { return TransientMessageStore() }
+        let texts = seed.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+        return TransientMessageStore(initial: SavedDrafts(slotTexts: texts, selectedSlot: 0))
     }
 }
