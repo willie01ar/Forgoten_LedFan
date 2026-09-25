@@ -21,6 +21,7 @@ software problem; `protocol-findings.md` ends with what would reopen it.
 | [`onboarding.md`](onboarding.md) | Prerequisites, commands, guardrails |
 | [`brief.md`](brief.md) | Goal, constraints, the three milestones and their outcomes |
 | [`decisions.md`](decisions.md) | **Architect decisions. Overrides older docs.** |
+| [`retrospective.md`](retrospective.md) | How the project actually got solved, and the mistakes that repeated |
 | [`architecture.md`](architecture.md) | Module boundaries, contracts, concurrency model |
 | [`features.md`](features.md) | Feature set with acceptance criteria, ticked only where demonstrated |
 | [`design.md`](design.md) | UI structure, design tokens, motion, accessibility |

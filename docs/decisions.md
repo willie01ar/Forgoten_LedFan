@@ -4,6 +4,55 @@ Architect decisions. Newest first. A decision here overrides anything older in t
 
 ---
 
+## D21 — Handle device removal properly
+**2026-09-25. Answers slice-9 open item 5. A bug, not a question.**
+
+After a cable swap the app still reports "Connected" and the next Send fails with
+`kIOReturnBadArgument`. The owner hit this on his second send. Observe removal (an
+`IOHIDManager` removal callback), and treat `kIOReturnBadArgument` / not-open from
+`SetReport` as a lost connection rather than a write failure. Status returns to disconnected,
+Send disables, and the copy says the fan was unplugged — not that the write failed.
+
+Fix this first in the next slice. It is the one thing that makes a working feature feel broken.
+
+---
+
+## D20 — Verify the echoes
+**2026-09-25. Answers slice-9 open item 4.**
+
+The head echoes every report back on the interrupt-IN endpoint, with the header's first byte
+returned as `A1`. That is better than the acknowledgement we hoped for: it is a loopback, so
+comparing each echo against what was sent turns it into a genuine end-to-end transfer check.
+
+Do it. Count mismatches, surface the count in the `FanStoreReceipt`, and say plainly when
+every report was confirmed. The reference driver does not do this; we can, and for a device
+with no other feedback path it is worth having.
+
+Do not abort a send on a mismatch — record it. A partial write is more diagnosable than an
+aborted one.
+
+---
+
+## D19 — A Send writes all eight slots
+**2026-09-25. Answers slice-9 open item 1.**
+
+Slice 9 established a protocol fact: **a send defines the fan's whole stored set.** Unsent
+slots are cleared, not preserved — which is why slots 2-8 of the factory demo vanished.
+
+The app's model must match the device's. **Send writes all eight slots**, taking the eight
+persisted drafts (slice 7) and sending empty ones as blank images. The UI says so: this
+publishes everything, it does not append one message.
+
+The alternative — one slot per send, with a warning — was rejected. It makes the destructive
+behaviour a footnote the user reads once and forgets, and it leaves the app's mental model
+disagreeing with the hardware's.
+
+**Effects (open item 2) are deferred.** The header's open, close and before-close fields have
+known codes; transcribe them into `protocol-findings.md` so they are not lost, and leave the
+UI at reference defaults until someone asks for it. Not every capability needs a control.
+
+---
+
 ## D18 — Add lowercase glyphs to `GlyphFont`
 **2026-09-25. Prompted by the factory demo transcription.**
 
