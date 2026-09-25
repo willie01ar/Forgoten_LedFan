@@ -1275,3 +1275,10 @@ their defaults (D19); `PearlFanEffects` carries the codes for when a control is 
   callback is late, `SetReport` answering `kIOReturnBadArgument`, `kIOReturnNotOpen`,
   `kIOReturnNoDevice`, `kIOReturnNotAttached` or `kIOReturnOffline` is treated the same way:
   "The fan was unplugged", never "the write failed".
+
+### 2026-09-25 — Slice 10 hardware check: all eight slots sent
+Fan A, switched off, data cable in. The hardware UI test typed all eight slots (the factory
+demo's first four lines, lowercase included, then `HELLO WILLIE`, `Slot six`, `Slot seven`,
+`Slot eight`), connected, and sent. Receipt, verbatim: **"Published all 8 slots: 320
+reports (2560 bytes) in 2.9 s. Every report was confirmed by the fan's echo."** Eight
+images, ids 0–7, 320 echoes all matching (D20). Observation after the swap pending.
