@@ -1282,3 +1282,19 @@ demo's first four lines, lowercase included, then `HELLO WILLIE`, `Slot six`, `S
 `Slot eight`), connected, and sent. Receipt, verbatim: **"Published all 8 slots: 320
 reports (2560 bytes) in 2.9 s. Every report was confirmed by the fan's echo."** Eight
 images, ids 0–7, 320 echoes all matching (D20). Observation after the swap pending.
+
+Observation after the swap, owner's transcription, verbatim: **"Hello World. I hold 8 Msg.",
+"26 letters in each Msg", "I'm your *NOTE PAD*" "*Mon Pick me Up @4P*", "HELLO WILLIE",
+"Slot six", "Slot seven", "Slot eight"**.
+
+All eight slots cycle, in slot order, and lowercase renders as lowercase on the fan (D18 on
+hardware). Two characters in the transcription differ from what was sent and echoed
+(`*Mom Pick me up @4P*`): "Mon" for "Mom" and "Up" for "up". The bytes are the golden
+stream, confirmed by echo, so these are readings of the 5x7 font at speed, not a transfer
+difference: a lowercase m and n differ by one column at this size, and the lowercase u is
+the same shape as the capital U's lower part. Noted as a legibility limit of the font, not a
+bug, pending the owner's second look.
+
+**Established today:** a send of eight images restores an eight-message cycle; the fan's
+model is exactly "the last set it was given"; the interrupt-IN echo confirms a 320-report
+transfer with no misses.
