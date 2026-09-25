@@ -1186,3 +1186,10 @@ So, established on hardware in one send:
 Pending from this send: whether the head acknowledged on the interrupt-IN endpoint (the
 receipt line and the `.hex` log), and what became of slots 2–8, which held the factory
 demo. Per the brief, no further packets go out in this slice.
+
+Slots 2–8 after the single-image send, owner's observation, verbatim: **"slots 2 to 8
+gone"**. The fan shows only `HELLO WILLIE`; none of the factory demo remains. So a send
+defines the whole stored set: the head keeps exactly the images it was just given, and
+anything not sent is cleared rather than preserved. That matches the reference driver,
+which numbers images from 0 and never pads to 8. To keep several messages, send them all
+in one session, in slot order. Fan A's demo is now gone for good; Fan B's is intact.
