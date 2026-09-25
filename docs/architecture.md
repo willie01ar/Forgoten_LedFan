@@ -42,7 +42,12 @@ nonisolated protocol FrameComposing: Sendable {
     func frame(from strip: ColumnStrip, geometry: FanGeometry, columnOffset: Int) -> POVFrame
 }
 
-/// Framing: 24C16 block addressing, up to six data bytes per 8-byte report.
+/// The seam every protocol implements: messages to the exact 8-byte reports sent.
+nonisolated protocol FanReportEncoding: Sendable {
+    func reports(for messages: [FanMessage]) throws -> [[UInt8]]
+}
+
+/// Generation-2 only. Framing: 24C16 block addressing, up to six data bytes per 8-byte report.
 nonisolated protocol EEPROMWriting: Sendable {
     func packets(writing bytes: [UInt8], toAddress address: UInt16) -> [[UInt8]]
 }
@@ -72,21 +77,21 @@ struct POVFrame    { geometry: FanGeometry; columns: [UInt16] }  // one revoluti
 describe what the screen draws, never what is sent. The composer centres short messages
 on the top of the disc and mirrors columns so glyph tops sit at the rim.
 
-## Where the unknown lives
+## Where the protocol lives
 
-This head's table format is unknown. The format the app implements,
-`GenerationTwoTableSerializer`, is the sibling generation's, recovered from the vendor
-editor (D16); it is the only `MessageTableSerializing` conformance, and the only type that
-changes when a format for this head is found. `FanTableWriter` joins the serializer to
-`EEPROMWriting` with no I/O, which is what lets a test drive a trivial format through the
-whole chain (slice 8, Task 4). If a new format forces edits in the ViewModel, the
-rasterizer, or the views, the boundary was drawn wrong.
+Behind `FanReportEncoding`. `PearlFanEncoder` is this head's (`0c45:7701`, D17),
+golden-tested against the reference driver; `FanTableWriter` is the generation-2 sibling's,
+kept selectable. Adding a fan model is one conformance. If a new format forces edits in
+the ViewModel, the rasterizer, or the views, the boundary was drawn wrong. Slice 9 proved
+the seam the way D8 intended: the transport, ViewModel and views did not change when the
+real protocol replaced the placeholder.
 
-`HIDFanTransport` owns the device handle. It connects, sends the writer's reports with
-`IOHIDDeviceSetReport`, reads nothing back because this head never answers, logs each
-send's packets to a file, and returns a `FanStoreReceipt`. It declares
-`storeAvailability = .experimental(caveat:)`; the ViewModel shows the caveat and keeps Send
-enabled, and the receipt's words, never "sent" alone, become the confirmation line.
+`HIDFanTransport` owns the device handle. It opens the device seized as the reference
+driver does, sends the encoder's reports with `IOHIDDeviceSetReport`, waits one second per
+report for an interrupt-IN acknowledgement through `InputReportInbox` (an actor fed by the
+IOKit callback on the main run loop), logs each report with its reply, and returns a
+`FanStoreReceipt`. It declares `storeAvailability = .experimental(caveat:)`; the ViewModel
+shows the caveat, keeps Send enabled, and uses the receipt's words as the confirmation line.
 
 ## Concurrency model
 

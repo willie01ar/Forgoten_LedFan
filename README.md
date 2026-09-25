@@ -111,8 +111,8 @@ The original head was destroyed while being opened. Two new fans arrived with th
 USB ID, and the search that finally worked started from the retailer's name rather than the
 chip's: the PEARL PX5939 has two open-source drivers, and its header opcode is the `A0` the
 old head kept reacting to. The app now speaks that protocol, validated byte for byte
-against the Rust driver before any packet went out. See `docs/reports/` for how the first
-send went.
+against the Rust driver before any packet went out, and on 25 September the first send put
+`HELLO WILLIE` on the blades, upright and readable. The fan is no longer dark.
 
 ## Credits
 
@@ -135,4 +135,4 @@ plainly what worked, what did not, and where the brief itself was wrong. Those r
 in [`docs/reports/`](docs/reports/) and are honestly the most useful thing in the repo if you
 want to know how a nine-year-old gadget resisted a determined summer.
 
-It was fun. The fan is still dark. Somebody out there has the CD.
+It was fun. The fan says hello now. The CD was never needed after all.

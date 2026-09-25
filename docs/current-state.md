@@ -1,9 +1,9 @@
 # Current state
 
-## The finished app (2026-09-03)
+## The finished app (2026-09-25)
 
 LedFan is a sandboxed macOS app, Swift 6 with strict concurrency complete, zero
-third-party dependencies, zero build warnings, 88 unit tests and 8 UI tests passing, plus
+third-party dependencies, zero build warnings, 131 unit tests and 8 UI tests passing, plus
 2 hardware-checklist UI tests that skip unless a flag and the fan are present.
 
 **What it does.** You type a message into one of eight slots, up to 26 characters, and see
@@ -16,18 +16,15 @@ stores messages per slot and confirms with a time-stamped line. The USB fan conn
 Send writes the message as a PearlFan-protocol image, logs every packet with any reply, and
 reports what happened. On 2026-09-25 the first send displayed `HELLO WILLIE` on the fan.
 
-**What is blocked, and why.** Sending a message to the physical fan. The head is a
-write-only HID device on the rotating hub whose stored-table format was never found: every
-free route was exhausted over twelve cable swaps, a blind sweep erased the factory demo,
-and the vendor editor that was found targets a sibling product. The app writes the only
-format it has, the generation-2 table (D16), knowing the head ignores it. This is not a
-software problem. What would reopen it is at the
-end of `protocol-findings.md`.
+**What is known to be incomplete.** A send defines the fan's whole stored set, so
+sending slot 1 alone clears the other seven; the app sends one slot per Send today. The
+font has no lowercase (D18). Effects are fixed at the reference defaults. See the slice 9
+report's open items.
 
-**Where the hardware investigation stands.** Stalled, not closed, in the architect's
-words: it needs the software that shipped with a `0c45:7701` fan, a USB capture of it, or
-a second unit. `protocol-discovery.md` records every route and its status;
-`protocol-findings.md` is the complete log.
+**Where the hardware investigation stands.** Solved. The protocol is pearlfan-rs's
+(MIT/Apache-2.0), reimplemented in `PearlFanEncoder` and golden-tested against the
+reference library; `protocol-findings.md` holds the byte-level map with citations and the
+log of the first send. The generation-2 (`0c45:7160`) writer stays selectable in code.
 
 The specification in these documents is authoritative. Where the code disagrees with the
 documents, change the code.
@@ -46,10 +43,13 @@ LedFan/
     FanDisplayTransport.swift   transport protocol (geometry, store, storeAvailability) + FanTransportError
     FanTransportProviding.swift FanTransportKind, the provider protocol, FixedTransportProvider
   Transport/
+    FanReportEncoding.swift     the seam: messages -> the exact 8-byte reports a transport sends
+    PearlFanEncoder.swift       FanReportEncoding for 0c45:7701 (D17): header + 39 column reports per image
+    InputReportInbox.swift      actor collecting the fan's input reports for the per-packet acknowledgement wait
     EEPROMWriter.swift          EEPROMWriting (D8): 24C16 block addressing, six data bytes per report
     GenerationTwoTableSerializer.swift  MessageTableSerializing + the 0c45:7160 family's table, byte for byte (D16)
-    FanTableWriter.swift        serializer -> EEPROM reports, no I/O; PacketLog writes each send to a file
-    HIDFanTransport.swift       actor over IOHIDDevice; connects, writes the table, returns a receipt, never reads (D16)
+    FanTableWriter.swift        the generation-2 path as a FanReportEncoding; PacketLog writes each send and its replies
+    HIDFanTransport.swift       actor over IOHIDDevice, opened seized; sends, waits 1 s per report for an ack, returns a receipt
     SimulatedFanTransport.swift actor holding messages per slot; storedMessages stream is a test seam
     DefaultFanTransportProvider.swift  production wiring of kind -> transport
     MessageStoring.swift        SavedDrafts + the persistence protocol; normalises malformed data
@@ -69,6 +69,9 @@ LedFanTests/                    Swift Testing
     FrameComposerTests.swift         invariant, arc, offset, wrap, orientation
     FanMessageTests.swift            slot and length validation
     EEPROMWriterTests.swift          block addressing, padding, packet counts
+    PearlFanEncoderTests.swift       header packing, pixel inversion, column reversal, width refusal
+    PearlFanEncoderGoldenTests.swift byte-for-byte against pearlfan-rs for five inputs
+    InputReportInboxTests.swift      acknowledgement queueing and timeout
     GenerationTwoTableSerializerTests.swift  byte-for-byte against the vendor stream
     FanTableWriterTests.swift        the seam with a trivial serializer; the packet log
     MessageStoreTests.swift          SavedDrafts normalisation, file store round trip, corrupt data
@@ -104,9 +107,9 @@ Tools/                          throwaway probes, outside the app target
 
 ## Known limits
 
-1. **The fan's stored-table format is unknown and the factory demo is erased.** The app
-   writes the generation-2 table (D16), which this head ignores. A Version 3 format, if one
-   is ever found, is one new `MessageTableSerializing` conformance.
+1. **One Send clears the other seven slots.** The protocol stores exactly the images of a
+   send; keeping several messages means sending all of them together. Product decision
+   pending (slice 9 report).
 2. **`HIDFanTransport.placeholderGeometry`** (11 LEDs, 180 columns) is a preview guess.
 3. **At 180 columns per revolution, no message scrolls.** The longest allowed message is
    26 characters, 156 columns at the rasterizer's 6-column pitch, which fits one revolution.
