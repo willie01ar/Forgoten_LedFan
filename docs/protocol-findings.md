@@ -1161,3 +1161,28 @@ other reference streams in `Tools/PearlFanGolden/golden/`, byte for byte
   so those packets were malformed headers. The stall remains unexplained but is now moot.
 - The head never acknowledged anything because it was never sent a well-formed image. The
   first correct send is the first real test of the interrupt-IN channel.
+
+### 2026-09-25 — FIRST SEND WITH THE PEARLFAN PROTOCOL: IT WORKS
+Fan A, `0c45:7701`, switched off, data cable in, power cable out. The app itself did the
+send (USB fan, slot 1, `HELLO WILLIE`, Connect, Send): 40 reports, the stream
+`Tools/PearlFanGolden/golden/golden-hello-willie.hex` that the golden test pins, with the
+image id 0 and the default effects (open and close right-to-left, no motion). Receipt shown
+in the app: "Wrote 40 reports …" (full line and the acknowledgement log to follow; the
+app's sandbox container is unreadable from any shell on this Mac).
+
+Then the swap: data cable out, power cable in, switched on. Owner's observation, verbatim:
+
+> **"HELLO WILLIE is showing, upright and readable"**
+
+So, established on hardware in one send:
+- The protocol reimplemented from pearlfan-rs is correct for this head. Milestone 2 is
+  reached.
+- Row 0 of the image is the **tip** of the arm and column 0 the **left** of the text as
+  read: the LED bit table and the reversed column order are the right way round.
+- Our 5x7 font at a 6-column pitch, glyph top at arm row 2, renders legibly on the real
+  disc.
+- A well-formed image replaces the content of a slot without any init or finish sequence.
+
+Pending from this send: whether the head acknowledged on the interrupt-IN endpoint (the
+receipt line and the `.hex` log), and what became of slots 2–8, which held the factory
+demo. Per the brief, no further packets go out in this slice.
