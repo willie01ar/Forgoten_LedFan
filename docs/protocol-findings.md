@@ -1298,3 +1298,18 @@ bug, pending the owner's second look.
 **Established today:** a send of eight images restores an eight-message cycle; the fan's
 model is exactly "the last set it was given"; the interrupt-IN echo confirms a 320-report
 transfer with no misses.
+
+### 2026-09-25 — Colour: the fan displays RED, and the format has a colour bit
+`First_Write.png` (the slice-9 send, photographed spinning) shows `HELLO WILLIE` in **red**.
+The unit was bought as the "Green LED" variant.
+
+The pixel format carries a **colour flag in bit 13** of each 16-bit column, alongside the 11
+pixel bits. Our encoder currently sets whatever the reference default is and nothing exposes
+it. Two possibilities, both cheap to test with no cable swap beyond a normal send:
+
+1. The blades are multi-colour and bit 13 (plus any sibling bits) selects the colour, in
+   which case colour is already available to us and merely unexposed.
+2. The shipped unit is simply red rather than green, and the bit does nothing here.
+
+Test by sending the same message twice with the colour bit toggled and comparing the disc.
+Worth knowing before anyone designs an effects or colour UI — it may already be free.

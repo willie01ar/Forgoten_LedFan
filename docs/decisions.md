@@ -4,6 +4,58 @@ Architect decisions. Newest first. A decision here overrides anything older in t
 
 ---
 
+## D24 — Diagnostics out of the UI, errors stay
+**2026-09-26. Owner's instruction.**
+
+Report counts, byte counts, timings and echo statistics are instrumentation, not information
+a person wants after typing a note. They leave the interface.
+
+- **Out:** "Published all 8 slots: 320 reports (2560 bytes) in 2.9 s", "Every report was
+  confirmed by the fan's echo", and any similar telemetry.
+- **In:** every `FanTransportError` message, unchanged. The unplugged-cable copy, the
+  two-port explanation, the over-length and over-capacity messages. These tell a person what
+  to do.
+- **Success says something plain**, naming what happened in human terms, not in reports and
+  bytes.
+
+Echo verification (D20) **stays and keeps running** — it moves from the interface to the
+send log. It surfaces only when it fails, and a failure is an error.
+
+---
+
+## D23 — USB fan first, and selected by default
+**2026-09-26. Owner's instruction. Supersedes the long-standing "default is simulated".**
+
+The simulated transport was the default since slice 4 because there was no working hardware.
+There is now. USB fan comes first in the picker and is selected on launch.
+
+**Consequence to handle deliberately:** launching with no fan attached must be calm. Not
+connected is a resting state, not an error — no red text, no alarm. The error copy appears
+when the user asks to Connect and it fails, not before.
+
+---
+
+## D22 — Send publishes the filled fields, compacted
+**2026-09-26. Owner's instruction. Supersedes D19's "empty ones as blank images".**
+
+D19 had Send write all eight slots, sending empty ones as blank images. That was wrong in a
+way only visible on the hardware: **a blank image is a real image.** The fan would cycle
+through it, so five empty slots meant five dark gaps in the rotation.
+
+**Send publishes the non-empty fields only, in field order, numbered from 0 with no gaps.**
+Three filled fields means the fan cycles three messages, not eight with five blanks.
+
+Unchanged from D19: a send still defines the fan's whole stored set. Anything not sent is
+cleared. The caption must still say so.
+
+If every field is empty there is nothing to publish, and Send is disabled.
+
+Field positions are a UI convenience and are persisted as such; they are not fan slot
+indices. Field 5's text may become image 1 on the fan. That is correct and needs no comment
+in the interface.
+
+---
+
 ## D21 — Handle device removal properly
 **2026-09-25. Answers slice-9 open item 5. A bug, not a question.**
 
