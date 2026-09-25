@@ -132,8 +132,9 @@ Tools/                          throwaway probes, outside the app target
   `MessageTableSerializing`; the framing, `EEPROMWriter`, is separate and fully tested.
   `FanTableWriter` joins them with no I/O, so any format can be driven through the whole
   chain in tests.
-- `HIDFanTransport` is deliberately thin. It connects, sends the writer's reports, never
-  reads (this head never answers), logs every send, and returns a receipt in plain words.
+- `HIDFanTransport` is deliberately thin. It connects seized, sends the encoder's reports,
+  waits briefly for each acknowledgement, logs every send with its replies, and returns a
+  receipt in plain words.
 - Drafts are saved through `MessageStoring`, injected with a file store by default and a
   transient store for previews and UI tests. The ViewModel never knows which.
 - Scrolling is a `TimelineView` reading a pure `previewFrame(at:)` from the ViewModel. No
