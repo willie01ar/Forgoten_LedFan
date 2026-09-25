@@ -1201,3 +1201,19 @@ every wait ended early, about 15 ms each. So the head acknowledged all 40 on the
 endpoint, for the first time in this project's history. The first head never did, because it
 was never sent a well-formed image. The acknowledgement bytes are in the send's `.hex` log
 in the app container; to be added here when the owner copies it out.
+
+**The acknowledgement bytes** (`Tools/probe-output/sends/2026-09-25T22-21-53-slot1.hex`, the
+app's log of the send; wire bytes identical to `golden-hello-willie.hex`):
+
+- The head answers every report with **an 8-byte echo of the report it just received**.
+  All 39 data reports came back byte for byte.
+- The header comes back with **its first byte changed from `A0` to `A1`**: the reply to
+  `A0 10 00 00 55 00 00 00` was `A1 10 00 00 55 00 00 00`. The low bit of the opcode is the
+  acknowledgement flag; the rest of the header is echoed unchanged.
+
+So the interrupt-IN channel is a loopback with one flag bit, which is why the reference
+driver reads it and discards it: there is nothing in it the host did not already know,
+except that the head received the bytes. A future transport could check each echo against
+what it sent and treat a mismatch as a transfer error; the reference does not, and ours
+does not yet. The first head's `GET_REPORT` behaviour (returning the last SETUP packet) was
+a different, control-pipe echo and never this one.

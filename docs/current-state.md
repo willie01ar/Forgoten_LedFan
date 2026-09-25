@@ -49,7 +49,7 @@ LedFan/
     EEPROMWriter.swift          EEPROMWriting (D8): 24C16 block addressing, six data bytes per report
     GenerationTwoTableSerializer.swift  MessageTableSerializing + the 0c45:7160 family's table, byte for byte (D16)
     FanTableWriter.swift        the generation-2 path as a FanReportEncoding; PacketLog writes each send and its replies
-    HIDFanTransport.swift       actor over IOHIDDevice, opened seized; sends, waits 1 s per report for an ack, returns a receipt
+    HIDFanTransport.swift       actor over IOHIDDevice, opened seized; sends, waits for each report's echo (the fan's acknowledgement), returns a receipt
     SimulatedFanTransport.swift actor holding messages per slot; storedMessages stream is a test seam
     DefaultFanTransportProvider.swift  production wiring of kind -> transport
     MessageStoring.swift        SavedDrafts + the persistence protocol; normalises malformed data

@@ -23,7 +23,7 @@ each report with what came back. The generation-2 writer stays selectable behind
 | Builds with no warnings; all tests pass, golden tests included | Yes. 131 unit tests, 8 UI tests, 2 hardware tests skipped without the flag. 0 warnings. |
 | Findings with citations and a worked example | `protocol-findings.md`, "Slice 9". |
 | README credits | Added: pearlfan-rs, Ventto/pearlfan, and the two sibling-fan projects. |
-| One send, one swap, observation verbatim | Done: "HELLO WILLIE is showing, upright and readable"; "slots 2 to 8 gone". |
+| One send, one swap, observation verbatim | Done: "HELLO WILLIE is showing, upright and readable"; "slots 2 to 8 gone". 40 of 40 reports echoed back. |
 
 ## The vendor mini-CD (addendum, item 2)
 
@@ -64,8 +64,10 @@ Fan A only. Fan B stays in its box and never receives a byte.
 - **Enumeration.** Fan A on the bus as `0c45:7701`. The app was launched from the build and
   the owner drove it: USB fan, slot 1, `HELLO WILLIE`, Connect, Send. Receipt, verbatim: **"Wrote 40 reports (320 bytes) in 0.6 s"**. A silent head costs one
   second per report; 0.6 s for 40 means every report was acknowledged on the interrupt-IN
-  endpoint within about 15 ms. The reply bytes are in the send's `.hex` log inside the app's
-  container, unreadable from every shell on this Mac; the owner copies it out through Finder.
+  endpoint within about 15 ms. The log, copied out by the owner, is
+  `Tools/probe-output/sends/2026-09-25T22-21-53-slot1.hex`: the wire bytes are identical to
+  the golden stream, and every reply is an echo of the report it answers, the header's
+  first byte returned as `A1`. The acknowledgement is a loopback with one flag bit.
 - **Swap.** Data cable out, power in, switched on. Verbatim: **"HELLO WILLIE is showing,
   upright and readable."** Then: **"slots 2 to 8 gone."**
 - **What that settles.** The reimplemented protocol is correct; image row 0 is the tip and
@@ -88,8 +90,8 @@ was the first well-formed image the family's firmware ever received from this re
 2. **Effects.** Fixed at the reference defaults. The header carries open, close and
    before-close fields with known codes; exposing them is a UI question.
 3. **D18, lowercase.** Now a fidelity matter with a working fan behind it.
-4. **The acknowledgement bytes** are still to be copied from the `.hex` log; that the head
-   acknowledges is established by the timing.
+4. **Echo checking.** The head echoes every report; comparing echoes to what was sent would
+   turn the acknowledgement into a real transfer check. The reference does not; neither do we.
 
 ## Where the brief was wrong
 
