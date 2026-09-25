@@ -59,15 +59,15 @@ struct FanTransportTests {
 
     // MARK: - Hardware transport, without hardware
 
-    @Test func theHardwareTransportSaysWhatToExpect() {
+    @Test func theHardwareTransportSaysHowToProgram() {
         let transport = HIDFanTransport(packetLogDirectory: nil)
         guard case .experimental(let caveat) = transport.storeAvailability else {
             Issue.record("expected the hardware transport to be experimental")
             return
         }
-        #expect(caveat.contains("different generation"))
-        #expect(caveat.contains("nothing is expected to appear"))
-        #expect(!caveat.lowercased().contains("cable"))
+        #expect(caveat.contains("PearlFan protocol"))
+        #expect(caveat.contains("switched off"))
+        #expect(caveat.contains("swap to the power cable"))
     }
 
     @Test func storingOnDisconnectedHardwareThrowsNotConnected() async throws {
@@ -79,14 +79,15 @@ struct FanTransportTests {
     }
 
     @Test func theReceiptSaysWhatHappenedAndNeverClaimsSuccess() {
-        let plain = HIDFanTransport.receiptSummary(reportCount: 6, byteCount: 48, heldWrites: 0)
-        let held = HIDFanTransport.receiptSummary(reportCount: 6, byteCount: 48, heldWrites: 1)
-        #expect(plain.contains("6 reports"))
-        #expect(plain.contains("48 bytes"))
-        #expect(plain.contains("No acknowledgement"))
-        #expect(plain.contains("Nothing is expected on the blades"))
-        #expect(held.contains("1 write was held"))
-        for copy in [plain, held, HIDFanTransport.caveat] {
+        let silent = HIDFanTransport.receiptSummary(reportCount: 40, byteCount: 320, acknowledged: 0, elapsed: .seconds(40))
+        let partial = HIDFanTransport.receiptSummary(reportCount: 40, byteCount: 320, acknowledged: 39, elapsed: .milliseconds(1300))
+        #expect(silent.contains("40 reports"))
+        #expect(silent.contains("320 bytes"))
+        #expect(silent.contains("40.0 s"))
+        #expect(silent.contains("No acknowledgement came back"))
+        #expect(partial.contains("acknowledged 39 of 40"))
+        #expect(partial.contains("1.3 s"))
+        for copy in [silent, partial, HIDFanTransport.caveat] {
             #expect(!Self.hasUnqualifiedSuccessLanguage(copy), "copy reads as success: \(copy)")
         }
     }
@@ -105,7 +106,7 @@ struct FanTransportTests {
     @Test func everyTransportErrorHasAHumanReadableDescription() {
         let errors: [FanTransportError] = [
             .deviceNotFound, .openFailed(code: -1), .notConnected, .writeFailed(code: -2),
-            .nothingToStore, .tableTooLarge(bytes: 3000, limit: 2048)
+            .nothingToStore, .tableTooLarge(bytes: 3000, limit: 2048), .imageTooWide(columns: 157, limit: 156)
         ]
         for error in errors {
             #expect(error.errorDescription?.isEmpty == false)

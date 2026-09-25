@@ -43,4 +43,22 @@ struct FanTableWriterTests {
         #expect(text == "A0 00 01 02 03 04 05 06\nA0 06 FF 00 00 00 00 00\n")
         #expect(url.lastPathComponent.hasSuffix("-slot1.hex"))
     }
+
+    @Test func thePacketLogRecordsEachAcknowledgementOrItsAbsence() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("LedFanTests-log-\(UUID().uuidString)")
+        let reports: [[UInt8]] = [[0xA0, 0x10, 0, 0, 0x55, 0, 0, 0], [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]]
+        let url = try PacketLog(directory: directory).write(reports, acknowledgements: [[0x01, 0x02], nil], label: "slot1")
+        let text = try String(contentsOf: url, encoding: .utf8)
+        #expect(text == "A0 10 00 00 55 00 00 00  <- 01 02\nFF FF FF FF FF FF FF FF  <- no acknowledgement\n")
+    }
+
+    @Test func theHardwareDefaultIsThePearlFanProtocolAndGenerationTwoStaysSelectable() throws {
+        let message = try FanMessage(slot: 0, text: "A")
+        let pearl = try PearlFanEncoder().reports(for: [message])
+        let generationTwo = try FanTableWriter().reports(for: [message])
+        #expect(pearl.count == 40)
+        #expect(pearl[0][0] == 0xA0 && pearl[0][1] == 0x10)
+        #expect(generationTwo[0][0] == 0xA0 && generationTwo[0][1] == 0x00)
+        _ = HIDFanTransport(encoder: FanTableWriter(), packetLogDirectory: nil)
+    }
 }

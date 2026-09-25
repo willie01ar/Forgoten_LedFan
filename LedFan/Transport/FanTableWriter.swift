@@ -1,8 +1,9 @@
 import Foundation
 
-/// Turns messages into the exact reports a transport sends: serializer, then EEPROM framing.
-/// No I/O and no device knowledge, so the whole chain is testable with any serializer.
-nonisolated struct FanTableWriter: Sendable {
+/// The generation-2 (`0c45:7160`) write path: table serializer, then EEPROM framing. Kept as
+/// the documented alternative to `PearlFanEncoder` (D17). No I/O, so any serializer can be
+/// driven through it in tests.
+nonisolated struct FanTableWriter: FanReportEncoding {
     static let tableAddress: UInt16 = 0
 
     let serializer: any MessageTableSerializing
@@ -20,7 +21,8 @@ nonisolated struct FanTableWriter: Sendable {
     }
 }
 
-/// One file per send, hex bytes, one report per line, so any send is reproducible later.
+/// One file per send: each report's hex bytes, then what came back for it, one line per
+/// report, so any send is reproducible and the fan's answers are on record.
 nonisolated struct PacketLog: Sendable {
     let directory: URL
 
@@ -32,12 +34,22 @@ nonisolated struct PacketLog: Sendable {
         return support.appendingPathComponent("LedFan/sends", isDirectory: true)
     }
 
-    func write(_ reports: [[UInt8]], label: String, at date: Date = .now) throws -> URL {
+    func write(_ reports: [[UInt8]], acknowledgements: [[UInt8]?] = [], label: String, at date: Date = .now) throws -> URL {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let stamp = date.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false)).replacingOccurrences(of: ":", with: "-")
         let url = directory.appendingPathComponent("\(stamp)-\(label).hex")
-        let lines = reports.map { $0.map { String(format: "%02X", $0) }.joined(separator: " ") }
+        let lines = reports.enumerated().map { index, report in
+            var line = Self.hex(report)
+            if index < acknowledgements.count {
+                line += acknowledgements[index].map { "  <- " + Self.hex($0) } ?? "  <- no acknowledgement"
+            }
+            return line
+        }
         try (lines.joined(separator: "\n") + "\n").write(to: url, atomically: true, encoding: .utf8)
         return url
+    }
+
+    private static func hex(_ bytes: [UInt8]) -> String {
+        bytes.map { String(format: "%02X", $0) }.joined(separator: " ")
     }
 }

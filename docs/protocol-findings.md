@@ -1035,3 +1035,129 @@ Message 1 being exactly 26 characters independently confirms the capability spec
 so the device's font has lowercase glyphs. Our `GlyphFont` is a 5x7 table with no lowercase
 — `columns(for:)` uppercases every character, so we would render "Mom" as "MOM". The table
 does already carry `.`, `'`, `*` and `@`. See decision D18.
+
+---
+
+## 2026-09-25 — Slice 9: the PearlFan protocol, pinned down from pearlfan-rs
+
+Source read: **pearlfan-rs**, commit `3d9b32c`, MIT OR Apache-2.0 (github.com/mwja/pearlfan-rs).
+Nothing from Ventto/pearlfan (GPLv3) was read or used. Line numbers below are in that commit.
+The reference bytes in `Tools/PearlFanGolden/` were produced by building the reference
+library with a scratch harness and drawing our rasterizer's pixel grids through it.
+
+### Device and transport
+- VID `0x0C45`, PID `0x7701` (`src/lib.rs:55-57`). Display 156 x 11, 8 stored images
+  (`src/lib.rs:62-66`).
+- Opened through hidapi (`src/device.rs:67-70`). hidapi 2.6.7's macOS backend opens the
+  `IOHIDDevice` with **`kIOHIDOptionsTypeSeizeDevice`** (`etc/hidapi/mac/hid.c:469`, `:1503`,
+  `:1055`) and delivers input reports through `IOHIDDeviceRegisterInputReportCallback` on a
+  run loop (`:1072`). Our transport now opens seized and listens the same way.
+- `transfer_packet` (`src/device.rs:81-93`): a 9-byte buffer, report id `00` then the 8
+  data bytes; hidapi strips the id and calls `IOHIDDeviceSetReport(kIOHIDReportTypeOutput,
+  0, data, 8)` (`hid.c:1126`). Then **`read_timeout(8 bytes, 1000 ms)`** on the interrupt-IN
+  endpoint. A timeout returns zero bytes and is **not** an error; only a HID error aborts.
+  The received bytes are logged at trace level and otherwise ignored.
+- No init sequence, no finish packet, no delays other than the acknowledgement read
+  (`src/device.rs:100-126`).
+
+### Per image: one header, then 39 data reports
+`send_animation` (`src/device.rs:103-121`): for image `i` (0-based, in the order given,
+**only the images passed; no padding to 8**), send `effect.to_bytes(i)`, then the 156
+column words in 39 chunks of 4, each word **little-endian**, so 8 bytes per report.
+
+**Header** (`src/effects.rs:54-108`): the 64-bit constant `0x0000_0055_0000_10A0` OR'd with
+a 16-bit options word shifted left 16, written little-endian:
+
+```
+options = close | open << 4 | imageID << 8 | beforeClose << 12
+wire    = A0 10 [close | open<<4] [imageID | beforeClose<<4] 55 00 00 00
+```
+
+Effect codes (`src/effects.rs:4-22`, `:28-36`): open/close `0` right-to-left, `1`
+left-to-right, `2` symmetric, `3` red carpet, `4` top-to-bottom, `5` bottom-to-top, `6`
+fast mode (opening only; refused for closing, `:91-93`). Before-close motion: `0` none
+("remain"), `2` turn left-to-right ("clockwise"), `6` turn right-to-left ("anticlockwise").
+Defaults are right-to-left both ways and no motion (`:47-52`). The reference has no code
+for the vendor's "flash 3 times".
+
+**Column words** (`src/draw/mod.rs:7-19`, `:24-25`, `:126`, `:143`): a blank column is
+`0xFFFF`; a lit pixel **clears** a bit. Image row `y` (0 = top) clears
+`[0x0008, 0x0004, 0x0002, 0x0001, 0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200][y]`,
+named LED10 down to LED0 in the source. Column `x` on the disc (0 = left) is stored at word
+index `155 - x`, so **the leftmost column is the last word on the wire**. Which physical LED
+is LED10 is not stated; the font puts glyph tops at `y = 0`, so `y = 0` should be the tip.
+The first send settles it: upright text means the mapping holds.
+
+**Text layout** (`src/draw/font/ascii.rs:76-105`): 5 columns per glyph plus 1 blank, pages
+of `156 / 6 = 26` characters, character `i` at `x = 6i`. Identical to our rasterizer's
+pitch, so a 26-character message fills the disc exactly. Text longer than 26 characters
+becomes further images with the next ids. Empty text draws **no** image at all
+(`:79-83`); our encoder sends a blank image instead, so a slot can be cleared.
+
+**Unknown, to be established on the fan:** whether the image id selects a stored slot (our
+encoder sends the slot number as the id; the reference always numbers from 0), and what
+happens to slots that are not written. Fan A's demo occupies all 8, so the first send
+answers both: after writing slot 1 only, do slots 2–8 still show the demo?
+
+### Worked example: one message, "A", in slot 1
+Our glyph for A is `7E 11 11 11 7E` with the top row at arm row 2, so disc columns 0–4 hold
+the glyph and columns 5–155 are blank. Column 0 (rows 3–8 lit) becomes
+`0xFFFF & ~(0x0001|0x8000|0x4000|0x2000|0x1000|0x0800) = 0x07FE`, sent as `FE 07` in the
+**last** two bytes of the **last** report. All 40 reports, from the reference harness:
+
+```
+A0 10 00 00 55 00 00 00
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FE 07
+FD DF FD DF FD DF FE 07
+```
+
+Reports 2–37 are blank columns; report 39 holds columns 7–4 (`FD DF FD DF FD DF FE 07`
+is report 40: columns 3, 2, 1, 0). The Swift encoder reproduces these bytes, and the four
+other reference streams in `Tools/PearlFanGolden/golden/`, byte for byte
+(`LedFanTests/PearlFanEncoderGoldenTests.swift`).
+
+### Consistency with everything before
+- `A0` is the first byte of every header. The sweeps that erased the original demo sent
+  `A0 10 …` followed by `FF` payloads, which is a valid header for image 0 with garbage
+  options, followed by data reports of all-blank columns: **an erase, exactly as observed.**
+- The 5-second stall at `A0 18…A0 23`: in this protocol the second byte is always `0x10`,
+  so those packets were malformed headers. The stall remains unexplained but is now moot.
+- The head never acknowledged anything because it was never sent a well-formed image. The
+  first correct send is the first real test of the interrupt-IN channel.

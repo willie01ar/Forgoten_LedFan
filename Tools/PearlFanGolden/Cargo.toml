@@ -1,0 +1,8 @@
+[package]
+name = "pearlfan-golden"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Clone github.com/mwja/pearlfan-rs (commit 3d9b32c) beside the repository, or adjust the path.
+pearlfan = { path = "../../../pearlfan-rs", default-features = false }

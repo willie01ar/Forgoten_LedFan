@@ -1,0 +1,294 @@
+import Foundation
+import Testing
+@testable import LedFan
+
+/// Golden bytes from pearlfan-rs (commit 3d9b32c, MIT/Apache-2.0) through the harness in
+/// Tools/PearlFanGolden: the same pixel grids our rasterizer produces, drawn with the reference
+/// library's `Frame::draw_point`, framed as its `Device::send_animation` frames them. Fonts differ
+/// between the two projects, so the grids are the shared input and the bytes are the contract.
+struct PearlFanEncoderGoldenTests {
+    private let encoder = PearlFanEncoder()
+    private func message(_ text: String, slot: Int = 0) throws -> FanMessage { try FanMessage(slot: slot, text: text) }
+    private func hex(_ reports: [[UInt8]]) -> String {
+        reports.map { $0.map { String(format: "%02X", $0) }.joined(separator: " ") }.joined(separator: "\n")
+    }
+    private func golden(_ text: String) -> String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    @Test func anEmptySlotIsABlankImage() throws {
+        #expect(hex(try encoder.reports(for: [message("")])) == golden(Self.empty))
+    }
+
+    @Test func theLetterA() throws {
+        #expect(hex(try encoder.reports(for: [message("A")])) == golden(Self.letterA))
+    }
+
+    @Test func aFullTwentySixCharacterMessage() throws {
+        #expect(hex(try encoder.reports(for: [message("THE QUICK BROWN FOX JUMPS!")])) == golden(Self.twentySix))
+    }
+
+    @Test func helloWillieTheFirstSend() throws {
+        #expect(hex(try encoder.reports(for: [message("HELLO WILLIE")])) == golden(Self.helloWillie))
+    }
+
+    @Test func twoMessagesInSlotsZeroAndOne() throws {
+        let messages = [try message("A", slot: 0), try message("THE QUICK BROWN FOX JUMPS!", slot: 1)]
+        #expect(hex(try encoder.reports(for: messages)) == golden(Self.twoImages))
+    }
+
+    // MARK: - Reference output, verbatim
+
+    static let empty = """
+A0 10 00 00 55 00 00 00
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+"""
+
+    static let letterA = """
+A0 10 00 00 55 00 00 00
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FE 07
+FD DF FD DF FD DF FE 07
+"""
+
+    static let twentySix = """
+A0 10 00 00 55 00 00 00
+FF FF FF FF FF FF FC 17
+FF FF FF FF FF FF FD CF
+FD B7 FD B7 FD B7 FE 77
+FF FF FE 7F FD BF FD BF
+FD BF FC 07 FF FF FC 07
+FE FF FF 3F FE FF FC 07
+FF FF FC 0F FF F7 FF F7
+FF F7 FC 0F FF FF FD FF
+FC 0F FD F7 FF F7 FF EF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FC E7
+FF 5F FF BF FF 5F FC E7
+FF FF FE 0F FD F7 FD F7
+FD F7 FE 0F FF FF FD FF
+FD BF FD BF FD BF FC 07
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FC 07
+FF DF FF BF FF 7F FC 07
+FF FF FC 0F FF F7 FF 8F
+FF F7 FC 0F FF FF FE 0F
+FD F7 FD F7 FD F7 FE 0F
+FF FF FE 77 FD AF FD 9F
+FD BF FC 07 FF FF FE 4F
+FD B7 FD B7 FD B7 FC 07
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FD F7
+FE EF FF 5F FF BF FC 07
+FF FF FE EF FD F7 FD F7
+FD F7 FE 0F FF FF FF FF
+FD F7 FC 07 FD F7 FF FF
+FF FF FC 0F FF F7 FF F7
+FF F7 FC 0F FF FF FE 17
+FD EF FD D7 FD F7 FE 0F
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FD F7
+FD B7 FD B7 FD B7 FC 07
+FF FF FC 07 FF BF FF BF
+FF BF FC 07 FF FF FD FF
+FD FF FC 07 FD FF FD FF
+"""
+
+    static let helloWillie = """
+A0 10 00 00 55 00 00 00
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FD F7 FD B7 FD B7
+FD B7 FC 07 FF FF FF FF
+FD F7 FC 07 FD F7 FF FF
+FF FF FF F7 FF F7 FF F7
+FF F7 FC 07 FF FF FF F7
+FF F7 FF F7 FF F7 FC 07
+FF FF FF FF FD F7 FC 07
+FD F7 FF FF FF FF FC 0F
+FF F7 FF 8F FF F7 FC 0F
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FE 0F
+FD F7 FD F7 FD F7 FE 0F
+FF FF FF F7 FF F7 FF F7
+FF F7 FC 07 FF FF FF F7
+FF F7 FF F7 FF F7 FC 07
+FF FF FD F7 FD B7 FD B7
+FD B7 FC 07 FF FF FC 07
+FF BF FF BF FF BF FC 07
+"""
+
+    static let twoImages = """
+A0 10 00 00 55 00 00 00
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FE 07
+FD DF FD DF FD DF FE 07
+A0 10 00 01 55 00 00 00
+FF FF FF FF FF FF FC 17
+FF FF FF FF FF FF FD CF
+FD B7 FD B7 FD B7 FE 77
+FF FF FE 7F FD BF FD BF
+FD BF FC 07 FF FF FC 07
+FE FF FF 3F FE FF FC 07
+FF FF FC 0F FF F7 FF F7
+FF F7 FC 0F FF FF FD FF
+FC 0F FD F7 FF F7 FF EF
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FC E7
+FF 5F FF BF FF 5F FC E7
+FF FF FE 0F FD F7 FD F7
+FD F7 FE 0F FF FF FD FF
+FD BF FD BF FD BF FC 07
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FC 07
+FF DF FF BF FF 7F FC 07
+FF FF FC 0F FF F7 FF 8F
+FF F7 FC 0F FF FF FE 0F
+FD F7 FD F7 FD F7 FE 0F
+FF FF FE 77 FD AF FD 9F
+FD BF FC 07 FF FF FE 4F
+FD B7 FD B7 FD B7 FC 07
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FD F7
+FE EF FF 5F FF BF FC 07
+FF FF FE EF FD F7 FD F7
+FD F7 FE 0F FF FF FF FF
+FD F7 FC 07 FD F7 FF FF
+FF FF FC 0F FF F7 FF F7
+FF F7 FC 0F FF FF FE 17
+FD EF FD D7 FD F7 FE 0F
+FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FD F7
+FD B7 FD B7 FD B7 FC 07
+FF FF FC 07 FF BF FF BF
+FF BF FC 07 FF FF FD FF
+FD FF FC 07 FD FF FD FF
+"""
+}

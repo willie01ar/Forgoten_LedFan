@@ -105,6 +105,28 @@ remember what happened to my demo.
 `vendor/` holds the sibling fan's Windows editor for static analysis. Nothing in it was
 ever executed here, and there is no reason to start.
 
+## Update, September 2026: the protocol exists
+
+The original head was destroyed while being opened. Two new fans arrived with the same
+USB ID, and the search that finally worked started from the retailer's name rather than the
+chip's: the PEARL PX5939 has two open-source drivers, and its header opcode is the `A0` the
+old head kept reacting to. The app now speaks that protocol, validated byte for byte
+against the Rust driver before any packet went out. See `docs/reports/` for how the first
+send went.
+
+## Credits
+
+- **[pearlfan-rs](https://github.com/mwja/pearlfan-rs)** by Jacob MacKenzie-Websdale,
+  MIT / Apache-2.0. The packet layout, header constant, effect codes and pixel format were
+  taken from its source, and its library generated the golden bytes the Swift encoder is
+  tested against (`Tools/PearlFanGolden/`).
+- **[Ventto/pearlfan](https://github.com/Ventto/pearlfan)**, GPLv3, the original
+  reverse-engineering of the PX5939 that pearlfan-rs is based on. No code from it is used
+  here; it is credited as the work that made the rest possible.
+- [fergofrog/microwave_usb_fan](https://github.com/fergofrog/microwave_usb_fan) and
+  [marcin-osowski/usb_fan](https://github.com/marcin-osowski/usb_fan), whose write-ups of the
+  sibling `0c45:7160` fan shaped the generation-2 encoder that stays in the app.
+
 ## How it was built
 
 The whole thing was done as a conversation between me at the fan and Claude at the

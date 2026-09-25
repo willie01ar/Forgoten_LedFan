@@ -93,12 +93,12 @@ The app must be fully usable and demoable with no hardware attached.
 
 ## F5 — Sending to hardware
 
-**Milestone 2 stays paused (D6), but the writer is real (D16, supersedes D9).**
+**The writer speaks the fan's own protocol (D17). Milestone 2 turns on the first send.**
 
 **Acceptance**
 - [x] Send is disabled unless connected.
-- [x] Selecting the hardware transport states plainly that the implemented message format
-      belongs to a different generation of fan and that nothing is expected on the blades.
+- [x] Selecting the hardware transport says which protocol Send uses and how to program
+      the fan: data cable in, switched off, then swap to power to see the result.
 - [x] The copy does not imply a fault in the user's setup, and a unit test asserts it
       contains no unqualified success language.
 - [x] `GenerationTwoTableSerializer` implements the `0c45:7160` family's table byte for byte
@@ -107,13 +107,17 @@ The app must be fully usable and demoable with no hardware attached.
       truncated. Pure, `nonisolated`, rasterising through the injected rasterizer.
 - [x] `EEPROMWriting` frames the whole 2 KB store: eight blocks, `A0`…`AE` headers, no
       packet across a block boundary.
-- [x] `HIDFanTransport.store(_:)` sends, treats the head's silence as normal, counts a
-      5-second hold without failing, writes every send's packet stream to a file in the
-      container, and returns a receipt that says what happened.
+- [x] `PearlFanEncoder` reproduces pearlfan-rs's packet stream byte for byte for five
+      reference inputs, including an empty slot, "A" and a full 26-character message
+      (`PearlFanEncoderGoldenTests`). Effects use the reference codes; "remain" is the default.
+- [x] `HIDFanTransport.store(_:)` sends the encoder's reports, opens the device seized as
+      the reference does, waits one second per report for an interrupt-IN acknowledgement,
+      logs each report with what came back, and returns a receipt in words.
+- [x] `GenerationTwoTableSerializer` stays selectable through `FanTableWriter`, the same
+      `FanReportEncoding` seam.
 - [x] The seam holds: a trivial test-only serializer runs through the same writer unchanged.
-- [ ] A message stored on the hardware appears on the blades. The writer exists and works;
-      the format it writes is the wrong generation for this head, and the right one was
-      never found.
+- [ ] A message stored on the hardware appears on the blades. Awaiting the first send with
+      the PearlFan protocol (slice 9, Task 3).
 
 ---
 

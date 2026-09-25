@@ -21,17 +21,29 @@ final class HardwareChecklistUITests: XCTestCase {
         app.launch()
         selectUSBFan(in: app)
 
+        let messageField = app.textFields["Message to display on the fan"]
+        messageField.click()
+        messageField.typeKey("a", modifierFlags: .command)
+        messageField.typeText("HELLO WILLIE")
+        XCTAssertTrue(app.otherElements["Fan preview showing HELLO WILLIE in slot 1"].waitForExistence(timeout: 2))
+
         app.buttons["Connect to the fan"].click()
         XCTAssertTrue(app.staticTexts["SONiX LED fan: Connected"].waitForExistence(timeout: 10),
                       "Status was: \(statusText(in: app))")
 
-        // D16: the app writes the generation-2 table and says plainly what to expect.
+        // D17: the app writes the PearlFan protocol and reports what came back. A silent head
+        // costs one second per report, so the receipt can take up to 40 s.
         let sendButton = app.buttons["Send the message to the fan"]
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'different generation'")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'PearlFan protocol'")).firstMatch.exists)
         XCTAssertTrue(sendButton.isEnabled)
         sendButton.click()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'No acknowledgement'")).firstMatch.waitForExistence(timeout: 10))
-        attachScreenshot(of: app, named: "Hardware connected, table written")
+        let receipt = app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'Wrote 40 reports'")).firstMatch
+        XCTAssertTrue(receipt.waitForExistence(timeout: 60))
+        let note = XCTAttachment(string: (receipt.value as? String) ?? "no receipt")
+        note.name = "Receipt"
+        note.lifetime = .keepAlways
+        add(note)
+        attachScreenshot(of: app, named: "Hardware connected, PearlFan message written")
 
         app.buttons["Disconnect from the fan"].click()
         XCTAssertTrue(app.staticTexts["SONiX LED fan: Not connected"].waitForExistence(timeout: 5))

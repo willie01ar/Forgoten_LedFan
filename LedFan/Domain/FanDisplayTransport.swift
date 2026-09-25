@@ -13,16 +13,17 @@ nonisolated struct FanStoreReceipt: Sendable, Equatable {
     let summary: String
     let reportCount: Int
     let byteCount: Int
+    /// True only when every report was acknowledged.
     let acknowledged: Bool
-    let heldWrites: Int
+    let acknowledgementCount: Int
     let packetLog: URL?
 
-    init(summary: String, reportCount: Int, byteCount: Int, acknowledged: Bool, heldWrites: Int = 0, packetLog: URL? = nil) {
+    init(summary: String, reportCount: Int, byteCount: Int, acknowledged: Bool, acknowledgementCount: Int = 0, packetLog: URL? = nil) {
         self.summary = summary
         self.reportCount = reportCount
         self.byteCount = byteCount
         self.acknowledged = acknowledged
-        self.heldWrites = heldWrites
+        self.acknowledgementCount = acknowledgementCount
         self.packetLog = packetLog
     }
 }
@@ -46,6 +47,7 @@ nonisolated enum FanTransportError: Error, Sendable, Equatable {
     case writeFailed(code: Int32)
     case nothingToStore
     case tableTooLarge(bytes: Int, limit: Int)
+    case imageTooWide(columns: Int, limit: Int)
 }
 
 extension FanTransportError: LocalizedError {
@@ -63,6 +65,8 @@ extension FanTransportError: LocalizedError {
             return "The message is empty, so there is nothing to write."
         case .tableTooLarge(let bytes, let limit):
             return "The message table is \(bytes) bytes; the fan's store holds \(limit). Nothing was written."
+        case .imageTooWide(let columns, let limit):
+            return "The message is \(columns) columns wide; the fan shows \(limit). Nothing was written."
         }
     }
 }
