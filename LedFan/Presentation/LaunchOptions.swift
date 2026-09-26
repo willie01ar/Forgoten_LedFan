@@ -4,7 +4,15 @@ import Foundation
 ///
 ///   -columnsPerRevolution 120   narrower preview geometry, so a long message scrolls
 ///   -transientStore YES         drafts live in memory; the container is never touched
+///   -seedDrafts a%7Cb%7Cc       with the transient store: the eight fields' starting text, pipe-separated
+///                               and percent-encoded (UserDefaults mangles asterisks and quotes otherwise)
+///   -pinWindowToPrimaryDisplay YES   move the window onto the primary display at launch, where
+///                               XCUITest can capture it whatever display the pointer is on
 enum LaunchOptions {
+    static var pinWindowToPrimaryDisplay: Bool {
+        UserDefaults.standard.bool(forKey: "pinWindowToPrimaryDisplay")
+    }
+
     static var previewGeometry: FanGeometry {
         let columns = UserDefaults.standard.integer(forKey: "columnsPerRevolution")
         guard columns > 0 else { return .preview }
@@ -12,6 +20,10 @@ enum LaunchOptions {
     }
 
     static var messageStore: any MessageStoring {
-        UserDefaults.standard.bool(forKey: "transientStore") ? TransientMessageStore() : FileMessageStore()
+        guard UserDefaults.standard.bool(forKey: "transientStore") else { return FileMessageStore() }
+        guard let encoded = UserDefaults.standard.string(forKey: "seedDrafts"),
+              let seed = encoded.removingPercentEncoding else { return TransientMessageStore() }
+        let texts = seed.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+        return TransientMessageStore(initial: SavedDrafts(slotTexts: texts, selectedSlot: 0))
     }
 }

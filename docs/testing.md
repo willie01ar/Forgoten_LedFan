@@ -65,8 +65,25 @@ reports, and disconnects.
 - `store(_:)` before `connect()` throws `.notConnected`.
 - `connect()` then `store(_:)` succeeds and is retained per slot.
 - `disconnect()` on a never-connected transport does not trap.
-- The hardware transport reports that it cannot store, in copy that does not blame the
-  user's setup.
+- The hardware transport's copy never claims a display and never blames the user's setup;
+  the unplugged copy says what to do.
+- Echo verification: identical, header with the acknowledgement bit, mismatched, missing.
+
+### ViewModel, additions
+- Send publishes the filled fields compacted (three of eight become ids 0–2; a gap in the
+  middle compacts; all empty disables Send); an over-length draft in any field blocks Send
+  and is named.
+- The preview follows focus, else the first filled field, else is blank.
+- Success copy carries no report, byte or echo counts; an unconfirmed transfer is an
+  error; transport errors survive verbatim; USB fan is the default and launch is calm.
+- The removal watch follows a transport switch.
+- A `.deviceRemoved` error on Send, or a `.lost` event from the transport, lands the
+  ViewModel in Disconnected with the unplugged copy; an orderly disconnect stops listening.
+
+### Font
+- Every lowercase letter has its own glyph; x-height letters end on the baseline,
+  descenders reach one row below it, and a descender next to an x-height letter renders
+  below it without clipping.
 
 `HIDFanTransport` is **not** unit tested — it is a thin adapter over IOKit and there is
 nothing to assert without the device. Keep it thin enough that this is true. If it grows
@@ -88,7 +105,8 @@ messages and can be configured to fail on connect, fail on store, or refuse to s
 ## UI tests
 
 Every launch passes `-transientStore YES`, so the tests never read or write the real
-container. Scrolling evidence is captured at `-columnsPerRevolution 120`, because at the
+container, and picks the simulated fan first, since the USB fan is the launch default.
+`-seedDrafts "a|b|…"` fills the eight fields for a launch. Scrolling evidence is captured at `-columnsPerRevolution 120`, because at the
 shipped 180 no message is longer than a revolution; the frames are composited into
 `reports/images/2026-09-03-scroll-strip-*.png`.
 

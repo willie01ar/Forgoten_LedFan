@@ -1231,3 +1231,98 @@ Two facts for the app, not the protocol: a torn-down device answers `SetReport` 
 `kIOReturnBadArgument`, not `kIOReturnNoDevice`; and the transport needs to notice removal
 (`IOHIDDeviceRegisterRemovalCallback`, or treating that code as "reconnect") so a user who
 has just swapped cables is not shown a dead "Connected".
+
+---
+
+## 2026-09-25 — Slice 10: the header's effect codes, and what the app does with them
+
+Transcribed from pearlfan-rs `src/effects.rs` (commit `3d9b32c`) so they are not lost. The
+header is `A0 10 <close | open<<4> <imageID | beforeClose<<4> 55 00 00 00`.
+
+| Field | Bits of the options word | Code | Meaning |
+|---|---|---|---|
+| close | 0–3 | 0 | disappears left-to-right (default) |
+| | | 1 | disappears right-to-left |
+| | | 2 | both sides at once |
+| | | 3 | "red carpet" |
+| | | 4 | top-to-bottom |
+| | | 5 | bottom-to-top |
+| | | 6 | *invalid for close* (fast mode) |
+| open | 4–7 | 0 | appears right-to-left (default) |
+| | | 1 | appears left-to-right |
+| | | 2 | both sides at once |
+| | | 3 | "red carpet" |
+| | | 4 | top-to-bottom |
+| | | 5 | bottom-to-top |
+| | | 6 | fast mode, no transition |
+| image id | 8–11 | 0–7 | the slot; the reference numbers sent images from 0 |
+| before close | 12–15 | 0 | none, "remain" (default) |
+| | | 2 | turn left-to-right, "clockwise" |
+| | | 6 | turn right-to-left, "anticlockwise" |
+
+The vendor UI's "flash 3 times" has no code in the reference. The app keeps all three at
+their defaults (D19); `PearlFanEffects` carries the codes for when a control is wanted.
+
+### What a Send now does (D19, D20, D21)
+- **Publishes all eight slots** in one session, ids 0–7 in slot order, empty slots as blank
+  images, so the fan's stored set always equals the app's eight drafts. 320 reports.
+- **Verifies every echo.** Each report's echo must equal the report, or equal it with bit 0
+  of the first byte set (the header's `A0` → `A1`). The receipt counts confirmed, differing
+  and missing echoes and says "Every report was confirmed by the fan's echo" only when all
+  were. A mismatch never aborts a send.
+- **Notices removal.** `IOHIDDeviceRegisterRemovalCallback` marks the device gone and the
+  transport raises a `lost` event; the ViewModel drops to Disconnected by itself. If the
+  callback is late, `SetReport` answering `kIOReturnBadArgument`, `kIOReturnNotOpen`,
+  `kIOReturnNoDevice`, `kIOReturnNotAttached` or `kIOReturnOffline` is treated the same way:
+  "The fan was unplugged", never "the write failed".
+
+### 2026-09-25 — Slice 10 hardware check: all eight slots sent
+Fan A, switched off, data cable in. The hardware UI test typed all eight slots (the factory
+demo's first four lines, lowercase included, then `HELLO WILLIE`, `Slot six`, `Slot seven`,
+`Slot eight`), connected, and sent. Receipt, verbatim: **"Published all 8 slots: 320
+reports (2560 bytes) in 2.9 s. Every report was confirmed by the fan's echo."** Eight
+images, ids 0–7, 320 echoes all matching (D20). Observation after the swap pending.
+
+Observation after the swap, owner's transcription, verbatim: **"Hello World. I hold 8 Msg.",
+"26 letters in each Msg", "I'm your *NOTE PAD*" "*Mon Pick me Up @4P*", "HELLO WILLIE",
+"Slot six", "Slot seven", "Slot eight"**.
+
+All eight slots cycle, in slot order, and lowercase renders as lowercase on the fan (D18 on
+hardware). Two characters in the transcription differ from what was sent and echoed
+(`*Mom Pick me up @4P*`): "Mon" for "Mom" and "Up" for "up". The bytes are the golden
+stream, confirmed by echo, so these are readings of the 5x7 font at speed, not a transfer
+difference: a lowercase m and n differ by one column at this size, and the lowercase u is
+the same shape as the capital U's lower part. Noted as a legibility limit of the font, not a
+bug, pending the owner's second look.
+
+**Established today:** a send of eight images restores an eight-message cycle; the fan's
+model is exactly "the last set it was given"; the interrupt-IN echo confirms a 320-report
+transfer with no misses.
+
+### 2026-09-25 — Colour: the fan displays RED, and the format has a colour bit
+`First_Write.png` (the slice-9 send, photographed spinning) shows `HELLO WILLIE` in **red**.
+The unit was bought as the "Green LED" variant.
+
+The pixel format carries a **colour flag in bit 13** of each 16-bit column, alongside the 11
+pixel bits. Our encoder currently sets whatever the reference default is and nothing exposes
+it. Two possibilities, both cheap to test with no cable swap beyond a normal send:
+
+1. The blades are multi-colour and bit 13 (plus any sibling bits) selects the colour, in
+   which case colour is already available to us and merely unexposed.
+2. The shipped unit is simply red rather than green, and the bit does nothing here.
+
+Test by sending the same message twice with the colour bit toggled and comparing the disc.
+Worth knowing before anyone designs an effects or colour UI — it may already be free.
+
+### 2026-09-26 — Slice 11 hardware check: four filled fields, compacted
+Fan A, switched off, data cable in. The hardware UI test seeded Message 1 `Hello World. I
+hold 8 Msg.`, Message 3 `*Mom Pick me up @4P*`, Message 5 `HELLO WILLIE`, Message 8
+`Message eight`, with the other four empty, connected, and sent. The app published the
+four filled fields as images 0–3 (D22; 160 reports). Success line, verbatim: **"5:10 PM:
+Sent 4 messages to SONiX LED fan."** No error, so every echo matched. Observation after
+the swap pending.
+
+Observation after the swap, verbatim: **"The fan cycles 4 messages, no dark gaps"**. So a
+compacted send of four images gives a four-message cycle with no blank pass, which is
+what D22 was made to guarantee and what the slice-10 send of eight (four of them blank
+would have shown otherwise) never tested. Fifteen swaps in the project's history.

@@ -3,23 +3,24 @@
 ## The finished app (2026-09-25)
 
 LedFan is a sandboxed macOS app, Swift 6 with strict concurrency complete, zero
-third-party dependencies, zero build warnings, 131 unit tests and 8 UI tests passing, plus
+third-party dependencies, zero build warnings, 150 unit tests and 10 UI tests passing, plus
 2 hardware-checklist UI tests that skip unless a flag and the fan are present.
 
-**What it does.** You type a message into one of eight slots, up to 26 characters, and see
-it rendered as the fan would paint it: a polar preview at a fixed angular resolution, glyph
+**What it does.** You type up to eight messages, 26 characters each, into eight fields
+beside the preview, and see the focused one rendered as the fan would paint it: a polar preview at a fixed angular resolution, glyph
 tops at the rim, short messages centred on the top of the disc, messages longer than a
 revolution scrolling as a marquee with a dark gap before they wrap. Characters with no
 glyph are named in a caption and drawn blank. Over-length drafts are refused visibly and
 never cut. The eight drafts and the selected slot survive relaunch. The simulated fan
-stores messages per slot and confirms with a time-stamped line. The USB fan connects and
-Send writes the message as a PearlFan-protocol image, logs every packet with any reply, and
-reports what happened. On 2026-09-25 the first send displayed `HELLO WILLIE` on the fan.
+stores messages per slot and confirms with a time-stamped line. The USB fan is the
+default; Send publishes the filled fields, compacted, as PearlFan-protocol images, verifies
+the fan's echo of every report into the send log, and says in one plain line what it sent. Unplugging the
+fan drops the app to Disconnected by itself. Lowercase renders as lowercase.
 
-**What is known to be incomplete.** A send defines the fan's whole stored set, so
-sending slot 1 alone clears the other seven; the app sends one slot per Send today. The
-font has no lowercase (D18). Effects are fixed at the reference defaults. See the slice 9
-report's open items.
+**What is deliberately not there.** Effect controls: the header's open, close and
+before-close codes are transcribed in `protocol-findings.md` and carried by
+`PearlFanEffects`, and the app keeps them at the reference defaults (D19). Image upload,
+brightness and other fan models are out of scope (`brief.md`).
 
 **Where the hardware investigation stands.** Solved. The protocol is pearlfan-rs's
 (MIT/Apache-2.0), reimplemented in `PearlFanEncoder` and golden-tested against the
@@ -38,18 +39,19 @@ LedFan/
     POVFrame.swift              one revolution; count always == columnsPerRevolution
     FrameComposer.swift         FrameComposing + RevolutionComposer (padding, wrapping, offset, mirroring)
     FanMessage.swift            slot + text with the fan's limits; validation in init (D5)
-    GlyphFont.swift             5x7 column font, ~55 glyphs. Data worth keeping.
+    GlyphFont.swift             5x7 column font with lowercase (descenders on row 7); ~80 glyphs
     MessageRasterizer.swift     MessageRasterizing + ColumnRasterizer, geometry-free
     FanDisplayTransport.swift   transport protocol (geometry, store, storeAvailability) + FanTransportError
     FanTransportProviding.swift FanTransportKind, the provider protocol, FixedTransportProvider
   Transport/
     FanReportEncoding.swift     the seam: messages -> the exact 8-byte reports a transport sends
     PearlFanEncoder.swift       FanReportEncoding for 0c45:7701 (D17): header + 39 column reports per image
-    InputReportInbox.swift      actor collecting the fan's input reports for the per-packet acknowledgement wait
+    InputReportInbox.swift      the inbox actor, the removal flag, and the Sendable bridge the IOKit callbacks use
+    EchoVerification.swift      D20: an echo confirms its report when identical, or with the header's ack bit set
     EEPROMWriter.swift          EEPROMWriting (D8): 24C16 block addressing, six data bytes per report
     GenerationTwoTableSerializer.swift  MessageTableSerializing + the 0c45:7160 family's table, byte for byte (D16)
     FanTableWriter.swift        the generation-2 path as a FanReportEncoding; PacketLog writes each send and its replies
-    HIDFanTransport.swift       actor over IOHIDDevice, opened seized; sends, waits for each report's echo (the fan's acknowledgement), returns a receipt
+    HIDFanTransport.swift       actor over IOHIDDevice, opened seized; sends all slots, verifies echoes, observes removal, returns a receipt
     SimulatedFanTransport.swift actor holding messages per slot; storedMessages stream is a test seam
     DefaultFanTransportProvider.swift  production wiring of kind -> transport
     MessageStoring.swift        SavedDrafts + the persistence protocol; normalises malformed data
@@ -57,10 +59,10 @@ LedFan/
     FileMessageStore.swift      JSON in Application Support inside the container; TransientMessageStore for previews and UI tests
   Presentation/
     FanConnectionStatus.swift   connection state enum
-    FanMessageViewModel.swift   @MainActor @Observable; slots, counter, scrolling, restore/save
-    ContentView.swift           dumb view; ScrollingPreview drives a TimelineView, paused for Reduce Motion or an inactive scene
+    FanMessageViewModel.swift   @MainActor @Observable; eight fields, focus-driven preview, compaction, scrolling, restore/save
+    ContentView.swift           two columns via ViewThatFits; eight focused fields; ScrollingPreview drives a TimelineView
     FanSimulatorView.swift      Canvas polar plot
-    LaunchOptions.swift         -columnsPerRevolution and -transientStore, for evidence and UI tests only
+    LaunchOptions.swift         -columnsPerRevolution, -transientStore and -seedDrafts, for evidence and UI tests only
   DesignSystem/
     Theme.swift                 Layout, Palette and Motion tokens
 
@@ -72,6 +74,8 @@ LedFanTests/                    Swift Testing
     PearlFanEncoderTests.swift       header packing, pixel inversion, column reversal, width refusal
     PearlFanEncoderGoldenTests.swift byte-for-byte against pearlfan-rs for five inputs
     InputReportInboxTests.swift      acknowledgement queueing and timeout
+    EchoVerificationTests.swift      confirmed, mismatched and missing echoes
+    GlyphFontTests.swift             lowercase glyphs, baselines and descenders
     GenerationTwoTableSerializerTests.swift  byte-for-byte against the vendor stream
     FanTableWriterTests.swift        the seam with a trivial serializer; the packet log
     MessageStoreTests.swift          SavedDrafts normalisation, file store round trip, corrupt data
@@ -107,9 +111,9 @@ Tools/                          throwaway probes, outside the app target
 
 ## Known limits
 
-1. **One Send clears the other seven slots.** The protocol stores exactly the images of a
-   send; keeping several messages means sending all of them together. Product decision
-   pending (slice 9 report).
+1. **A Send is the whole set.** The fan keeps exactly what it was last given, so the app
+   publishes the filled fields every time, compacted, and says so under the button (D22).
+   A blank image is a real image the fan would cycle through, so empty fields are not sent.
 2. **`HIDFanTransport.placeholderGeometry`** (11 LEDs, 180 columns) is a preview guess.
 3. **At 180 columns per revolution, no message scrolls.** The longest allowed message is
    26 characters, 156 columns at the rasterizer's 6-column pitch, which fits one revolution.
@@ -121,7 +125,8 @@ Tools/                          throwaway probes, outside the app target
 
 ## Deliberate design decisions worth preserving
 
-- The default injected transport is **simulated**, not HID, so the app runs with no hardware.
+- The default transport is the **USB fan** (D23); the simulated one is a segment away, so the
+  app still runs and demos with no hardware, and launching without a fan is calm.
   The ViewModel depends on `FanTransportProviding`, never on a concrete transport; the
   picker in the UI switches kinds, and switching disconnects the previous transport.
 - `IOHIDManagerOpen` is never called. Opening the manager before the device leaves report

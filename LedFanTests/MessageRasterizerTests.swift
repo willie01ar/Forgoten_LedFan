@@ -54,10 +54,12 @@ struct MessageRasterizerTests {
         #expect(strip.columns.first == UInt16(0x7E) << 4)
     }
 
-    @Test func lowercaseMatchesUppercase() {
+    @Test func lowercaseHasItsOwnGlyphsAndOtherCasesFallBackToUppercase() {
         let lower = rasterizer.strip(for: "a", ledsPerArm: 11)
         let upper = rasterizer.strip(for: "A", ledsPerArm: 11)
-        #expect(lower == upper)
+        #expect(lower != upper, "D18: lowercase renders as lowercase")
+        #expect(lower.columns.count == upper.columns.count)
+        #expect(rasterizer.strip(for: "ǆ", ledsPerArm: 11).columns.allSatisfy { $0 == 0 }, "no glyph either way: blank")
     }
 
     @Test(arguments: ["\u{1F600}", "\u{07}", "\u{00}", "ß", "é"])

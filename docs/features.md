@@ -15,7 +15,8 @@ Type a message and see, immediately, what the fan would paint.
       to tip — because that is what the spinning arm actually draws.
 - [x] Characters with no glyph render as blank rather than crashing or being dropped, and
       a caption names them (D4).
-- [x] Lowercase input renders identically to uppercase.
+- [x] Lowercase renders with its own glyphs, descenders below the baseline (D18); characters
+      with no glyph of their own fall back to their uppercase form, then to blank.
 - [x] An empty message produces a blank frame, not a crash.
 - [x] A 26-character message renders as recognisable text (D1; screenshots in
       `reports/images/2026-09-02-*`).
@@ -73,7 +74,12 @@ The app must be fully usable and demoable with no hardware attached.
       disabled. The draft is never cut.
 - [x] Validation lives in the domain type (`FanMessage.init` throws), not the view.
 - [x] Per-slot drafts are retained in memory while the app runs; persistence is out of scope.
-- [x] A successful store shows "Stored in slot N at HH:MM:SS" (D3).
+- [x] A successful store shows the transport's receipt after the time (D3).
+- [x] Send publishes the filled fields, compacted, numbered from 0 with no gaps, and says
+      it replaces everything the fan holds; all empty disables Send (D22). An over-length
+      draft in any field blocks it and is named.
+- [x] Eight fields visible at once, each with its own counter and accessibility label; Tab
+      moves through them; the preview follows focus, else the first filled field.
 
 ---
 
@@ -96,7 +102,12 @@ The app must be fully usable and demoable with no hardware attached.
 **Done. The fan shows what the app sends (2026-09-25, slice 9).**
 
 **Acceptance**
-- [x] Send is disabled unless connected.
+- [x] Send is disabled unless connected, and disables by itself when the fan is unplugged;
+      the copy says the fan was unplugged, not that the write failed (D21).
+- [x] Every report's echo is verified (D20); the counts live in the send log and the
+      interface shows only a plain success line, or an error when the fan did not confirm
+      everything (D24).
+- [x] USB fan is first in the picker and the launch default; not connected is calm (D23).
 - [x] Selecting the hardware transport says which protocol Send uses and how to program
       the fan: data cable in, switched off, then swap to power to see the result.
 - [x] The copy does not imply a fault in the user's setup, and a unit test asserts it
@@ -119,7 +130,8 @@ The app must be fully usable and demoable with no hardware attached.
 - [x] A message stored on the hardware appears on the blades. `HELLO WILLIE`, slot 1,
       first send, "upright and readable" (`protocol-findings.md`, 2026-09-25).
 - [x] A send defines the whole stored set: slots not sent are cleared, not preserved. The
-      app currently sends one slot at a time; see the slice 9 report's open item.
+      app sends the filled fields, compacted (D22): three filled means three messages
+      cycle, with no blank gaps (slice 11 hardware check).
 
 ---
 

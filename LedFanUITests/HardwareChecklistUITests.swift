@@ -13,37 +13,32 @@ final class HardwareChecklistUITests: XCTestCase {
         try XCTSkipIf(hardwareState == nil, "Set LEDFAN_HARDWARE=attached or =absent to run the hardware checklist.")
     }
 
+    /// D22 check: four fields filled with gaps between them; the fan must cycle exactly four.
     @MainActor
     func testConnectsSendsAndDisconnectsWithTheFanAttached() throws {
         try XCTSkipUnless(hardwareState == "attached")
         let app = XCUIApplication()
-        app.launchArguments = ["-transientStore", "YES"]
+        let seed = LedFanUITests.encodedSeed(["Hello World. I hold 8 Msg.", "", "*Mom Pick me up @4P*", "", "HELLO WILLIE", "", "", "Message eight"])
+        app.launchArguments = LedFanUITests.mainDisplayWindow + ["-transientStore", "YES", "-seedDrafts", seed]
         app.launch()
-        selectUSBFan(in: app)
-
-        let messageField = app.textFields["Message to display on the fan"]
-        messageField.click()
-        messageField.typeKey("a", modifierFlags: .command)
-        messageField.typeText("HELLO WILLIE")
-        XCTAssertTrue(app.otherElements["Fan preview showing HELLO WILLIE in slot 1"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.textFields["Message 1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["SONiX LED fan: Not connected"].exists, "USB fan is the default")
 
         app.buttons["Connect to the fan"].click()
         XCTAssertTrue(app.staticTexts["SONiX LED fan: Connected"].waitForExistence(timeout: 10),
                       "Status was: \(statusText(in: app))")
 
-        // D17: the app writes the PearlFan protocol and reports what came back. A silent head
-        // costs one second per report, so the receipt can take up to 40 s.
-        let sendButton = app.buttons["Send the message to the fan"]
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'PearlFan protocol'")).firstMatch.exists)
+        let sendButton = app.buttons["Send the filled messages to the fan"]
         XCTAssertTrue(sendButton.isEnabled)
         sendButton.click()
-        let receipt = app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'Wrote 40 reports'")).firstMatch
-        XCTAssertTrue(receipt.waitForExistence(timeout: 60))
-        let note = XCTAttachment(string: (receipt.value as? String) ?? "no receipt")
-        note.name = "Receipt"
+        let success = app.staticTexts.matching(NSPredicate(format: "value CONTAINS 'Sent 4 messages to SONiX LED fan'")).firstMatch
+        XCTAssertTrue(success.waitForExistence(timeout: 200), "Status was: \(statusText(in: app))")
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Error:'")).firstMatch.exists)
+        let note = XCTAttachment(string: (success.value as? String) ?? "no success line")
+        note.name = "Success line"
         note.lifetime = .keepAlways
         add(note)
-        attachScreenshot(of: app, named: "Hardware connected, PearlFan message written")
+        attachScreenshot(of: app, named: "Hardware connected, four messages sent")
 
         app.buttons["Disconnect from the fan"].click()
         XCTAssertTrue(app.staticTexts["SONiX LED fan: Not connected"].waitForExistence(timeout: 5))
@@ -54,25 +49,19 @@ final class HardwareChecklistUITests: XCTestCase {
     func testReportsTheCableTrapWithTheFanAbsent() throws {
         try XCTSkipUnless(hardwareState == "absent")
         let app = XCUIApplication()
-        app.launchArguments = ["-transientStore", "YES"]
+        app.launchArguments = ["-transientStore", "YES"] + LedFanUITests.mainDisplayWindow
         app.launch()
-        selectUSBFan(in: app)
+        XCTAssertTrue(app.textFields["Message 1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["SONiX LED fan: Not connected"].exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Error:'")).firstMatch.exists, "calm before Connect")
 
         app.buttons["Connect to the fan"].click()
-        // The combined status element exposes its text as value on macOS, so match either field.
         let failure = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'data cable' OR value CONTAINS 'data cable'")).firstMatch
         XCTAssertTrue(failure.waitForExistence(timeout: 10), "Status was: \(statusText(in: app))")
-        XCTAssertFalse(app.buttons["Send the message to the fan"].isEnabled)
+        XCTAssertFalse(app.buttons["Send the filled messages to the fan"].isEnabled)
     }
 
     // MARK: - Helpers
-
-    @MainActor
-    private func selectUSBFan(in app: XCUIApplication) {
-        XCTAssertTrue(app.textFields["Message to display on the fan"].waitForExistence(timeout: 5))
-        app.radioButtons["USB fan"].click()
-        XCTAssertTrue(app.staticTexts["SONiX LED fan: Not connected"].waitForExistence(timeout: 5))
-    }
 
     @MainActor
     private func statusText(in app: XCUIApplication) -> String {

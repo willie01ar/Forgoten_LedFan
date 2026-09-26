@@ -9,47 +9,53 @@ Windows-only editor, both long gone. I always meant to program it from my Mac an
 the time to learn how USB devices actually talk. This year, with Claude doing the heavy
 lifting on the bits I never got round to, I finally had some fun digging into it.
 
-This repository is what came out: a finished macOS app, a complete record of the hardware
-investigation, and one unsolved puzzle that somebody with the right piece of software could
-close in an afternoon.
+This repository is what came out: a finished macOS app that writes my own messages to the
+fan, and a complete record of how its protocol was found — including the three weeks I spent
+certain that nobody had ever published it.
 
 ## What works
 
 A native macOS app (Swift 6, SwiftUI, no third-party dependencies) where you:
 
-- type a message into one of eight slots, up to 26 characters, with a live counter
-- see it exactly as the fan would paint it, in a polar preview with letters that stay upright
-  across the top of the disc
+- type up to eight messages, 26 characters each, upper and lower case, into eight fields
+  with live counters
+- see the one you are editing exactly as the fan would paint it, in a polar preview with
+  letters that stay upright across the top of the disc
 - watch long messages scroll as a marquee, or not, if you have Reduce Motion on
 - keep all eight drafts between launches
-- connect to the real fan, which the app finds and identifies
+- connect to the real fan, which the app finds, identifies, and notices when it is unplugged
+- **write your messages to it**, and watch them come round in the air
 
-And one thing it does with its eyes open: it writes a message table to the fan in the only
-format anyone has recovered, which belongs to a sibling model, and then tells you plainly
-that nothing is expected to appear. Read on.
+One press of Send publishes every filled field and replaces whatever the fan held; empty
+fields are left out, so four messages give a four-message cycle with no dark gaps. The app
+checks its own work: the fan echoes every packet back, so a send is confirmed report by
+report rather than hoped at. Getting to that point took most of a month, and the rest of
+this is how.
 
-![The preview](docs/reports/images/2026-09-02-legible-preview-dark.png)
+![The app](docs/reports/images/2026-09-26-layout-dark.png)
 
 ## The fan
 
 It turned out to be a SONiX microcontroller that shows up on USB as a HID device, vendor
-`0c45`, product `7701`, with eleven blue LEDs on the arm. Two things about it shaped the
+`0c45`, product `7701`, with eleven LEDs on the arm (red, as it turned out, whatever the
+box said). Two things about it shaped the
 whole story:
 
 1. **It has two cables.** The USB-A one is power only. The data port is on the *rotating
    head*, so the fan cannot spin while it is being programmed. You program it still, unplug,
    plug the power back in, and only then see whether anything changed. Every experiment
-   costs a cable swap. I made twelve.
-2. **It never talks back.** Whatever you send, it accepts and says nothing. There is no
-   acknowledgement and no way to read its memory over USB.
+   costs a cable swap. I made fifteen.
+2. **It only talks back when you get it right.** Send it nonsense and it accepts everything
+   in silence, which is how I spent weeks believing it was mute. Send it a correctly framed
+   packet and it echoes every one straight back. There is still no way to read its memory.
 
 ## The investigation, briefly
 
 - **Day one.** Got the app compiling and talking to the fan. Tried every documented probing
   route: listened, read reports, swept every possible first byte, walked every bit. The fan
   accepted everything and did nothing. Then a full sweep of every two-byte command with an
-  all-ones payload **erased the factory demo**. The fan has been dark since. Lesson learned
-  and written down in large letters.
+  all-ones payload **erased the factory demo**. That head never displayed anything again.
+  Lesson learned and written down in large letters.
 - **Prior art.** Found two open-source projects for a *sibling* fan from the same vendor
   (`0c45:7160`), which store rasterised text as 16-bit columns in a small message table.
   Tried their format on ours, in every encoding and addressing model we could think of.
@@ -63,30 +69,28 @@ whole story:
   whatever appeared would be unambiguous. Nothing appeared, except a dim blue blink of two
   LEDs at power-on, which is just the fan saying hello.
 
-The one solid clue: only commands starting with `A0` ever make the fan pause, and `A0` is
-the address of a common little EEPROM chip on an I2C bus. The best model is that the head
-is a tiny bridge writing whatever you send straight into that chip, and that the *layout*
-of the message table inside it is what nobody knows. Our fan appears to be a later
-hardware generation ("USB Fan Version 3.0" in the vendor's own words) than any editor that
-has surfaced online.
+The one solid clue held up, though not for the reason I thought: only commands starting
+with `A0` ever made the fan pause. I read that as the I2C address of a little EEPROM chip.
+It is actually the first byte of the protocol's own header — the fan was reacting to the
+one byte of a real command that I kept stumbling into by accident.
 
 ## Where you could pick this up
 
-Everything is in `docs/`. Start with [`docs/current-state.md`](docs/current-state.md), then
-the end of [`docs/protocol-findings.md`](docs/protocol-findings.md), which is the whole
-experiment log including every negative result, and closes with a summary written for
-exactly this moment.
+Everything is in `docs/`. If you only read one thing, read
+[`docs/retrospective.md`](docs/retrospective.md): what the breakthrough actually was, and the
+four separate times I concluded something firm from an instrument nobody had checked.
+[`docs/protocol-findings.md`](docs/protocol-findings.md) is the full experiment log,
+negative results included, which is most of it.
 
-Three things would reopen the hardware chapter:
+What is left is all optional. The format carries a colour flag that nothing exposes yet,
+and the fan displays red although it was sold as green, so colour may already be free. The
+header carries opening and closing effect codes, transcribed but unused. And the 5x7
+lowercase is legible on a spinning blade except for `m` versus `n` and `u` versus `U`, if
+anyone wants to draw a better one.
 
-- **the editor that shipped with a `0c45:7701` fan**, or any "USB Fan Version 3.0" editor:
-  a disassembly of its upload routine answers the question with no cable swaps at all
-- **a USB capture** of that editor programming one of these fans
-- **a second fan** of the same model, to compare against
-
-If you have any of those, the app is ready for you: the write path is real and tested end
-to end with the sibling's format, and the only type that changes when this fan's format
-arrives is one serializer. The tests and the rest of the app will not notice.
+If you have one of these fans, the app should just work: `0c45:7701`, eight messages, 26
+characters each. Plug in the data cable with the fan switched off, press Connect, then
+Send; swap to the power cable and the new messages come round.
 
 ## Building and running
 
@@ -113,6 +117,26 @@ chip's: the PEARL PX5939 has two open-source drivers, and its header opcode is t
 old head kept reacting to. The app now speaks that protocol, validated byte for byte
 against the Rust driver before any packet went out, and on 25 September the first send put
 `HELLO WILLIE` on the blades, upright and readable. The fan is no longer dark.
+
+The rest followed in two more slices: all eight slots in one send, lowercase included, with
+every one of the 320 packets confirmed by the fan's echo; the app noticing when the cable
+comes out instead of failing on the next write; and a compacted send, so a few filled
+fields give a short cycle rather than eight with blanks. The interface grew from one field
+to eight, the USB fan became the default, and the diagnostics moved out of the window
+and into a log.
+
+## The first demo
+
+Eight messages of my own, written from the app and photographed spinning. The letters are
+painted by eleven LEDs on one blade, so a still camera sees a whole revolution at once —
+which is also exactly how your eye sees it.
+
+| | | |
+|:--:|:--:|:--:|
+| ![](docs/reports/images/demo/web/IMG_7212.jpg) | ![](docs/reports/images/demo/web/IMG_7214.jpg) | ![](docs/reports/images/demo/web/IMG_7215.jpg) |
+| ![](docs/reports/images/demo/web/IMG_7217.jpg) | ![](docs/reports/images/demo/web/IMG_7218.jpg) | ![](docs/reports/images/demo/web/IMG_7219.jpg) |
+
+Full-resolution originals are in [`docs/reports/images/demo/`](docs/reports/images/demo/).
 
 ## Credits
 

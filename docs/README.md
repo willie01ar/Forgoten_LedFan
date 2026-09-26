@@ -5,22 +5,24 @@ A macOS app that displays a typed message on a USB LED persistence-of-vision fan
 These documents are the **authoritative specification**. Where the checked-in Swift and
 these documents disagree, the documents win.
 
-## Where the project stands (2026-09-03)
+## Where the project stands (2026-09-25)
 
-Finished as far as software can take it. The app builds warning-free in Swift 6 with
-strict concurrency, is fully tested, previews a message legibly, scrolls long ones,
-remembers eight slots, connects to the real fan and reports it, and refuses to write to
-it because the head's message-table format was never found. That last part is not a
-software problem; `protocol-findings.md` ends with what would reopen it.
+Working. The app builds warning-free in Swift 6 with strict concurrency, is fully tested,
+previews a message legibly in mixed case, scrolls long ones, remembers eight slots, and
+publishes all eight to the real fan over the PearlFan protocol with every report verified
+against the fan's echo. The protocol was found in September in two public drivers for the
+fan's retail model; `protocol-findings.md` holds the byte-level map and the log of the
+first sends.
 
 ## Read in this order
 
 | Document | What it settles |
 |---|---|
-| [`current-state.md`](current-state.md) | **Start here.** What the finished app does, what is blocked and why, where the hardware investigation stands |
+| [`current-state.md`](current-state.md) | **Start here.** What the app does, what is deliberately not there, and how the hardware question was settled |
 | [`onboarding.md`](onboarding.md) | Prerequisites, commands, guardrails |
 | [`brief.md`](brief.md) | Goal, constraints, the three milestones and their outcomes |
 | [`decisions.md`](decisions.md) | **Architect decisions. Overrides older docs.** |
+| [`retrospective.md`](retrospective.md) | How the project actually got solved, and the mistakes that repeated |
 | [`architecture.md`](architecture.md) | Module boundaries, contracts, concurrency model |
 | [`features.md`](features.md) | Feature set with acceptance criteria, ticked only where demonstrated |
 | [`design.md`](design.md) | UI structure, design tokens, motion, accessibility |

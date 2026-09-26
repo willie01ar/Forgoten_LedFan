@@ -1,9 +1,9 @@
 import Foundation
 
-/// The transports a user can choose between. Selecting the hardware one is an explicit act.
+/// The transports a user can choose between. The USB fan comes first and is the default (D23).
 nonisolated enum FanTransportKind: String, CaseIterable, Identifiable, Sendable {
-    case simulated
     case hardware
+    case simulated
 
     var id: Self { self }
 
