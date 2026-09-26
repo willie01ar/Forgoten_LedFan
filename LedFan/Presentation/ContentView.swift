@@ -9,15 +9,9 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: Layout.loose) {
-                controlsColumn
-                preview
-            }
-            VStack(spacing: Layout.loose) {
-                preview
-                controlsColumn
-            }
+        VStack(spacing: Layout.loose) {
+            preview
+            controlsColumn
         }
         .padding(Layout.loose)
         .frame(minWidth: Layout.minimumWindowWidth, idealWidth: Layout.idealWindowWidth)
@@ -46,9 +40,7 @@ struct ContentView: View {
                 ErrorBanner(message: lastError)
             }
         }
-        // The ideal width equals the minimum so ViewThatFits keeps two columns at any window
-        // width above the minimum; the column then grows into whatever space there is.
-        .frame(minWidth: Layout.controlsMinimumWidth, idealWidth: Layout.controlsMinimumWidth, maxWidth: .infinity)
+        .frame(maxWidth: .infinity)
     }
 
     private var controls: some View {

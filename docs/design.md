@@ -2,10 +2,10 @@
 
 ## Window
 
-Single window, one view, two columns: the controls on the left, the preview on the right,
-square and centred in its column. Minimum width 760pt; when the horizontal arrangement
-does not fit, at the largest Dynamic Type sizes, `ViewThatFits` stacks the preview above
-the controls instead of clipping. The preview is the hero — it is the reason the app exists.
+Single window, one view, stacked: the preview on top, square and centred, the eight
+fields and controls below it. Minimum width 600pt, ideal 900pt. A two-column arrangement
+was built in slice 11 and reverted the same day at the owner's request after seeing it;
+the preview is the hero — it is the reason the app exists — and it reads best on top.
 
 **Fields.** Eight text fields, one per message, visible at once, each with its own
 `n/26` counter and an accessibility label "Message 1" … "Message 8". Tab moves through

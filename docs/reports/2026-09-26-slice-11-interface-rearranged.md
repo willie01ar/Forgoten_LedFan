@@ -8,8 +8,8 @@ inbox and the echo verification are byte-for-byte as slice 10 left them.
 
 ## Summary
 
-Two columns, controls left and preview right, stacking under `ViewThatFits` when the width
-or the type size demands it. Eight fields visible at once, each with its own counter and
+The preview on top and eight fields below it (two columns were built, then reverted at the
+owner's request after he saw them). Eight fields visible at once, each with its own counter and
 accessibility label, Tab moving through them, the preview following keyboard focus. Send
 publishes only the filled fields, compacted and numbered from 0, so three filled fields
 mean three messages on the fan and no dark gaps; all empty disables it. The USB fan is the
@@ -31,7 +31,12 @@ Echo verification still runs in the transport and lands in the send log.
 
 ## Task by task
 
-### Task 1 — horizontal layout
+### Task 1 — horizontal layout, then reverted at the owner's request
+Built as the brief asked, checked on the fan, and then reverted the same day: after seeing
+the two columns, the owner preferred the preview on top. The app now stacks the preview
+above the eight fields and controls, minimum width 600pt, ideal 900pt. The screenshots
+below are the stacked layout that shipped; the two-column build is in the history
+(commits `a4e65ff` and `1c7b776`). The paragraphs that follow describe that build.
 `ViewThatFits(in: .horizontal)` with the controls column and the preview side by side, the
 preview square and centred in its column, and the stacked arrangement (preview above) as
 the fallback. Minimum window width 760pt, ideal 1040pt, controls column at least 340pt, all tokens in
@@ -112,8 +117,9 @@ Fan A only; Fan B stays sealed.
 
 ## Where the brief was wrong
 
-1. **"Controls on the left, the fan on the right"** read correctly on screen; the doubled
-   "to the left" in the instruction did not mislead. Flagged only because the brief asked.
+1. **"Controls on the left, the fan on the right"** read correctly on screen and was
+   built, and the owner, seeing it, preferred the preview on top. Reverted the same day;
+   the brief's layout was the one thing in it that did not survive contact with its author.
 2. **"With no focus, the first non-empty field."** Implemented, but on macOS the first
    field takes keyboard focus at launch, so "no focus" is rarely the state the user sees.
    The UI test asserts the launch state, "message 1, empty"; the unit tests cover the
