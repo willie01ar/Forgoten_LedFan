@@ -17,30 +17,34 @@ certain that nobody had ever published it.
 
 A native macOS app (Swift 6, SwiftUI, no third-party dependencies) where you:
 
-- type a message into one of eight slots, up to 26 characters, with a live counter
-- see it exactly as the fan would paint it, in a polar preview with letters that stay upright
-  across the top of the disc
+- type up to eight messages, 26 characters each, upper and lower case, into eight fields
+  with live counters
+- see the one you are editing exactly as the fan would paint it, in a polar preview with
+  letters that stay upright across the top of the disc
 - watch long messages scroll as a marquee, or not, if you have Reduce Motion on
 - keep all eight drafts between launches
-- connect to the real fan, which the app finds and identifies
+- connect to the real fan, which the app finds, identifies, and notices when it is unplugged
 - **write your messages to it**, and watch them come round in the air
 
-The app checks its own work: the fan echoes every packet back, so a send is confirmed
-report by report rather than hoped at. Getting to that point took most of a month, and the
-rest of this is how.
+One press of Send publishes every filled field and replaces whatever the fan held; empty
+fields are left out, so four messages give a four-message cycle with no dark gaps. The app
+checks its own work: the fan echoes every packet back, so a send is confirmed report by
+report rather than hoped at. Getting to that point took most of a month, and the rest of
+this is how.
 
-![The preview](docs/reports/images/2026-09-02-legible-preview-dark.png)
+![The app](docs/reports/images/2026-09-26-layout-dark.png)
 
 ## The fan
 
 It turned out to be a SONiX microcontroller that shows up on USB as a HID device, vendor
-`0c45`, product `7701`, with eleven blue LEDs on the arm. Two things about it shaped the
+`0c45`, product `7701`, with eleven LEDs on the arm (red, as it turned out, whatever the
+box said). Two things about it shaped the
 whole story:
 
 1. **It has two cables.** The USB-A one is power only. The data port is on the *rotating
    head*, so the fan cannot spin while it is being programmed. You program it still, unplug,
    plug the power back in, and only then see whether anything changed. Every experiment
-   costs a cable swap. I made fourteen.
+   costs a cable swap. I made fifteen.
 2. **It only talks back when you get it right.** Send it nonsense and it accepts everything
    in silence, which is how I spent weeks believing it was mute. Send it a correctly framed
    packet and it echoes every one straight back. There is still no way to read its memory.
@@ -81,11 +85,12 @@ negative results included, which is most of it.
 What is left is all optional. The format carries a colour flag that nothing exposes yet,
 and the fan displays red although it was sold as green, so colour may already be free. The
 header carries opening and closing effect codes, transcribed but unused. And the 5x7
-lowercase is legible on a spinning blade except for `m` versus `n`, if anyone wants to draw
-a better one.
+lowercase is legible on a spinning blade except for `m` versus `n` and `u` versus `U`, if
+anyone wants to draw a better one.
 
 If you have one of these fans, the app should just work: `0c45:7701`, eight messages, 26
-characters each.
+characters each. Plug in the data cable with the fan switched off, press Connect, then
+Send; swap to the power cable and the new messages come round.
 
 ## Building and running
 
@@ -112,6 +117,13 @@ chip's: the PEARL PX5939 has two open-source drivers, and its header opcode is t
 old head kept reacting to. The app now speaks that protocol, validated byte for byte
 against the Rust driver before any packet went out, and on 25 September the first send put
 `HELLO WILLIE` on the blades, upright and readable. The fan is no longer dark.
+
+The rest followed in two more slices: all eight slots in one send, lowercase included, with
+every one of the 320 packets confirmed by the fan's echo; the app noticing when the cable
+comes out instead of failing on the next write; and a compacted send, so a few filled
+fields give a short cycle rather than eight with blanks. The interface grew from one field
+to eight, the USB fan became the default, and the diagnostics moved out of the window
+and into a log.
 
 ## The first demo
 
