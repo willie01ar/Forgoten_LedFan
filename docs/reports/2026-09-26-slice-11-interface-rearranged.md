@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-26
 **Brief:** `docs/briefs/2026-09-26-slice-11-brief.md`. D22, D23, D24, with D3 and `design.md`.
-**Status:** software complete; the one hardware check follows the owner's checklist below.
+**Status:** complete. One send, one swap: four filled fields, four messages on the fan, no dark gaps.
 UI only: nothing below the ViewModel changed. The protocol, the encoder, the transport, the
 inbox and the echo verification are byte-for-byte as slice 10 left them.
 
@@ -22,7 +22,7 @@ Echo verification still runs in the transport and lands in the send log.
 |---|---|
 | Builds with no warnings; all tests pass, golden tests included | Yes. 144 unit tests (a compacted three-message golden among them), 9 UI tests, 2 hardware tests skipped without the flag. 0 compiler warnings. |
 | Screenshots in both appearances | `images/2026-09-26-layout-dark.png`, `-light.png`, several fields filled. |
-| One send, one swap, observation verbatim | Pending, below. |
+| One send, one swap, observation verbatim | Done: "The fan cycles 4 messages, no dark gaps". |
 | Report with "where the brief was wrong" | This document. |
 | Everything committed | Yes. |
 
@@ -101,8 +101,40 @@ Fan A only; Fan B stays sealed.
 
 ## Results
 
-*(appended after the check)*
+- **Send.** Fan A, switched off, data cable in. The hardware UI test seeded fields 1, 3, 5
+  and 8, connected, and sent; the app published the four filled fields as images 0–3.
+  Success line, verbatim: "5:10 PM: Sent 4 messages to SONiX LED fan." No error, so every
+  echo matched; the counts are in the send log, not on screen (D24).
+- **Swap.** Owner's observation, verbatim: **"The fan cycles 4 messages, no dark gaps."**
+- **What it settles.** Compaction is right: the fan cycles exactly what was filled, in field
+  order, and a gap in the fields is not a gap on the fan. The defect D22 exists to fix is
+  gone, and the plain success copy carried everything the owner needed to know.
 
 ## Where the brief was wrong
 
-*(completed with the results)*
+1. **"Controls on the left, the fan on the right"** read correctly on screen; the doubled
+   "to the left" in the instruction did not mislead. Flagged only because the brief asked.
+2. **"With no focus, the first non-empty field."** Implemented, but on macOS the first
+   field takes keyboard focus at launch, so "no focus" is rarely the state the user sees.
+   The UI test asserts the launch state, "message 1, empty"; the unit tests cover the
+   no-focus rule. Documented in `design.md`.
+3. **"Anything below the ViewModel is out of scope."** Held for the protocol, encoder and
+   transport. Two things below the view did change and are stated here: `FanTransportKind`
+   reordered so the USB fan is first (a Domain enum, D23 demands it), and one AppKit call
+   in the App struct behind a test-only launch option, because SwiftUI cannot place a
+   window on a given display and XCUITest can only capture the primary one.
+4. **"Every `FanTransportError` message survives verbatim."** They do, and one more piece
+   of transport copy survives that the brief did not list: the hardware caveat explaining
+   the cable-and-switch procedure. It is instruction, not diagnostics, so it stayed.
+5. **The golden test "updated to a compacted send."** Added rather than replaced: the
+   eight-slot golden from slice 10 still stands as a framing check, and a three-message
+   compacted golden sits beside it.
+6. **UserDefaults and asterisks.** Nothing in the brief could have known that seeding a
+   field through a launch argument mangles `*`; the UI test caught it before the fan did.
+
+## Open items for the architect
+
+1. The findings note from 2026-09-25 that the fan displays **red** and the column format
+   carries a colour bit. Out of scope here (no encoder changes); a one-send experiment
+   whenever colour matters.
+2. The 5x7 lowercase m/n and u/U legibility from slice 10 still stands.

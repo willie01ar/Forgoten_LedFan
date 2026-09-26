@@ -1321,3 +1321,8 @@ hold 8 Msg.`, Message 3 `*Mom Pick me up @4P*`, Message 5 `HELLO WILLIE`, Messag
 four filled fields as images 0–3 (D22; 160 reports). Success line, verbatim: **"5:10 PM:
 Sent 4 messages to SONiX LED fan."** No error, so every echo matched. Observation after
 the swap pending.
+
+Observation after the swap, verbatim: **"The fan cycles 4 messages, no dark gaps"**. So a
+compacted send of four images gives a four-message cycle with no blank pass, which is
+what D22 was made to guarantee and what the slice-10 send of eight (four of them blank
+would have shown otherwise) never tested. Fifteen swaps in the project's history.
