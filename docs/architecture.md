@@ -120,11 +120,11 @@ init(transportProvider: any FanTransportProviding = DefaultFanTransportProvider(
      composer: any FrameComposing = RevolutionComposer(),
      messageStore: any MessageStoring = FileMessageStore(),
      previewGeometry: FanGeometry = .preview,
-     transportKind: FanTransportKind = .simulated)
+     transportKind: FanTransportKind = .hardware)
 ```
 
-Note the default is the **simulated** transport, not the HID one. The app must be runnable
-and demoable with no hardware attached. Selecting the real transport is an explicit act.
+The default is the **USB fan** (D23); the simulated transport is one segment away, so the
+app is still demoable with no hardware attached, and launching without a fan is calm.
 
 ## Module layout
 

@@ -4,27 +4,23 @@ import Observation
 @MainActor
 @Observable
 final class FanMessageViewModel {
-    var selectedSlot: Int = 0 {
-        didSet { refreshPreview(); persist() }
-    }
-
-    /// The draft for the selected slot. Drafts for all slots survive slot changes and relaunches.
-    var message: String {
-        get { slotTexts[selectedSlot] }
-        set { slotTexts[selectedSlot] = newValue; refreshPreview(); persist() }
+    /// The field with keyboard focus, set by the view. The preview follows it.
+    var focusedField: Int? {
+        didSet { if oldValue != focusedField { refreshPreview() } }
     }
 
     var transportKind: FanTransportKind {
         didSet { if oldValue != transportKind { replaceTransport() } }
     }
 
-    private(set) var slotTexts: [String] = SavedDrafts.empty.slotTexts
+    /// Eight fields, a UI convenience persisted as such; not fan slot numbers (D22).
+    private(set) var fieldTexts: [String] = SavedDrafts.empty.slotTexts
     private(set) var status: FanConnectionStatus = .disconnected
     private(set) var previewFrame: POVFrame
     private(set) var geometry: FanGeometry
     private(set) var lastError: String?
-    private(set) var lastStored: String?
-    /// When the current message started scrolling; reset whenever the message changes.
+    private(set) var lastSuccess: String?
+    /// When the previewed message started scrolling; reset whenever it changes.
     private(set) var scrollEpoch = Date.now
 
     private let transportProvider: any FanTransportProviding
@@ -36,12 +32,14 @@ final class FanMessageViewModel {
     private var strip: ColumnStrip = .empty(ledsPerArm: 0)
     private var connectionWatch: Task<Void, Never>?
 
+    static let fields = 0..<FanMessage.slotCount
+
     init(transportProvider: any FanTransportProviding = DefaultFanTransportProvider(),
          rasterizer: any MessageRasterizing = ColumnRasterizer(),
          composer: any FrameComposing = RevolutionComposer(),
          messageStore: any MessageStoring = FileMessageStore(),
          previewGeometry: FanGeometry = .preview,
-         transportKind: FanTransportKind = .simulated) {
+         transportKind: FanTransportKind = .hardware) {
         self.transportProvider = transportProvider
         self.rasterizer = rasterizer
         self.composer = composer
@@ -63,42 +61,67 @@ final class FanMessageViewModel {
                   rasterizer: rasterizer, composer: composer, messageStore: messageStore)
     }
 
-    // MARK: - Derived state for the view
+    // MARK: - Fields
 
-    var transportName: String { transport.displayName }
-    var characterCount: Int { message.count }
-    var excessCharacters: Int { FanMessage.excessCharacters(in: message) }
-    var messageFitsTheFan: Bool { excessCharacters == 0 }
-    var counterText: String { "\(characterCount)/\(FanMessage.maximumCharacters)" }
+    func text(forField index: Int) -> String { fieldTexts[index] }
 
-    /// Why the draft cannot be stored as typed, or nil when it can.
+    func setText(_ text: String, forField index: Int) {
+        guard fieldTexts[index] != text else { return }
+        fieldTexts[index] = text
+        if index == previewField { refreshPreview() } else if focusedField == nil { refreshPreview() }
+        persist()
+    }
+
+    func characterCount(forField index: Int) -> Int { fieldTexts[index].count }
+    func counterText(forField index: Int) -> String { "\(characterCount(forField: index))/\(FanMessage.maximumCharacters)" }
+    func fieldFitsTheFan(_ index: Int) -> Bool { FanMessage.excessCharacters(in: fieldTexts[index]) == 0 }
+
+    var overLengthFields: [Int] { fieldTexts.indices.filter { !fieldFitsTheFan($0) } }
+
+    /// Which messages are over the limit and by how much, or nil when all fit.
     var lengthProblem: String? {
-        guard excessCharacters > 0 else { return nil }
-        return FanMessageError.tooLong(by: excessCharacters).localizedDescription
+        let problems = overLengthFields.map { index in
+            let excess = FanMessage.excessCharacters(in: fieldTexts[index])
+            return "Message \(index + 1) is \(excess) character\(excess == 1 ? "" : "s") over the fan's limit of \(FanMessage.maximumCharacters)."
+        }
+        return problems.isEmpty ? nil : problems.joined(separator: " ")
     }
 
-    /// Slots other than the selected one that are over the limit; Send publishes all eight.
-    var otherOverLengthSlots: [Int] {
-        slotTexts.indices.filter { $0 != selectedSlot && FanMessage.excessCharacters(in: slotTexts[$0]) > 0 }
+    // MARK: - Preview
+
+    /// The field the preview shows: the focused one, else the first with text, else none.
+    var previewField: Int? {
+        focusedField ?? fieldTexts.firstIndex { !$0.isEmpty }
     }
 
-    var otherSlotsProblem: String? {
-        let slots = otherOverLengthSlots
-        guard !slots.isEmpty else { return nil }
-        let names = slots.map { "\($0 + 1)" }.joined(separator: ", ")
-        return "Slot\(slots.count == 1 ? "" : "s") \(names) \(slots.count == 1 ? "is" : "are") over \(FanMessage.maximumCharacters) characters. Send publishes every slot, so fix them first."
+    var previewText: String { previewField.map { fieldTexts[$0] } ?? "" }
+
+    var previewDescription: String {
+        guard let field = previewField else { return "Fan preview, nothing to show" }
+        let text = fieldTexts[field]
+        return text.isEmpty ? "Fan preview, message \(field + 1), empty" : "Fan preview showing \(text) (message \(field + 1))"
     }
 
-    /// What Send does, in one line, so nobody expects it to add a single message (D19).
-    static let sendExplanation = "Send publishes all eight slots and replaces what the fan holds. Empty slots are cleared."
-
-    /// Characters in the draft with no glyph, which the preview draws blank (D4).
+    /// Characters in the previewed message with no glyph, which the preview draws blank (D4).
     var blankGlyphHint: String? {
         var seen = Set<Character>()
-        let missing = message.filter { !GlyphFont.supports($0) && seen.insert($0).inserted }
+        let missing = previewText.filter { !GlyphFont.supports($0) && seen.insert($0).inserted }
         guard !missing.isEmpty else { return nil }
         return "No glyph for \(missing.map { "“\($0)”" }.joined(separator: ", ")). Shown blank."
     }
+
+    // MARK: - Sending (D22)
+
+    /// The filled fields, in order, numbered from 0 with no gaps: what the fan will cycle.
+    var filledMessages: [FanMessage] {
+        fieldTexts.filter { !$0.isEmpty }.enumerated().compactMap { try? FanMessage(slot: $0.offset, text: $0.element) }
+    }
+
+    var filledCount: Int { fieldTexts.count { !$0.isEmpty } }
+
+    static let sendExplanation = "Send publishes the filled messages and replaces everything the fan holds. Empty fields are not sent."
+
+    var transportName: String { transport.displayName }
 
     /// The transport's own reason it cannot take messages, or nil when it can.
     var storeUnavailableReason: String? {
@@ -106,32 +129,23 @@ final class FanMessageViewModel {
         return nil
     }
 
-    /// The transport's warning that storing is not expected to show anything (D16), or nil.
+    /// How to program this fan, from the transport, or nil.
     var storeCaveat: String? {
         if case .experimental(let caveat) = transport.storeAvailability { return caveat }
         return nil
     }
 
     var canSend: Bool {
-        status.allowsSending && messageFitsTheFan && otherOverLengthSlots.isEmpty && storeUnavailableReason == nil
-    }
-
-    var previewDescription: String {
-        let slot = "slot \(selectedSlot + 1)"
-        return message.isEmpty ? "Fan preview, \(slot), empty" : "Fan preview showing \(message) in \(slot)"
+        status.allowsSending && overLengthFields.isEmpty && filledCount > 0 && storeUnavailableReason == nil
     }
 
     // MARK: - Scrolling
 
-    /// Only a message longer than one revolution has anything to scroll. Shorter ones stand
-    /// still, centred on the top of the disc.
     var scrollingIsPossible: Bool {
         strip.columns.count > geometry.columnsPerRevolution
     }
 
-    /// The frame to draw at `date` while scrolling, or the static frame when `date` is nil
-    /// (Reduce Motion, hidden window, or nothing to scroll). The marquee runs towards the
-    /// left of the top arc, so new characters enter on the right.
+    /// The frame to draw at `date` while scrolling, or the static frame when `date` is nil.
     func previewFrame(at date: Date?) -> POVFrame {
         guard let date, scrollingIsPossible else { return previewFrame }
         let elapsed = max(0, date.timeIntervalSince(scrollEpoch))
@@ -141,11 +155,11 @@ final class FanMessageViewModel {
 
     // MARK: - Lifecycle
 
-    /// Loads the saved drafts. Absent or unreadable data leaves every slot empty.
+    /// Loads the saved drafts. Absent or unreadable data leaves every field empty.
     func restore() async {
         guard let saved = await messageStore.load() else { return }
-        slotTexts = saved.slotTexts
-        selectedSlot = saved.selectedSlot
+        fieldTexts = saved.slotTexts
+        refreshPreview()
     }
 
     func connect() async {
@@ -168,16 +182,20 @@ final class FanMessageViewModel {
         status = .disconnected
     }
 
-    // MARK: - Actions
-
-    /// Publishes all eight slots (D19): the fan keeps exactly what it is last given.
+    /// Publishes the filled messages; the fan keeps exactly what it is last given.
     func sendMessage() async {
         guard canSend else { return }
         lastError = nil
+        lastSuccess = nil
+        let messages = filledMessages
         do {
-            let messages = try slotTexts.enumerated().map { try FanMessage(slot: $0.offset, text: $0.element) }
             let receipt = try await transport.store(messages)
-            lastStored = "\(Date.now.formatted(date: .omitted, time: .standard)): \(receipt.summary)"
+            if receipt.reportCount > 0 && !receipt.everyReportConfirmed {
+                lastError = "The fan did not confirm everything it was sent. Check the data cable and send again."
+            } else {
+                let count = messages.count == 1 ? "1 message" : "\(messages.count) messages"
+                lastSuccess = "\(Date.now.formatted(date: .omitted, time: .shortened)): Sent \(count) to \(transportName)."
+            }
         } catch FanTransportError.deviceRemoved {
             connectionLost(FanTransportError.deviceRemoved.localizedDescription)
         } catch {
@@ -187,22 +205,20 @@ final class FanMessageViewModel {
 
     // MARK: - Helpers
 
-    /// Short messages are centred on the top of the disc; longer ones start there and scroll.
     private func refreshPreview() {
-        strip = rasterizer.strip(for: message, ledsPerArm: geometry.ledsPerArm)
+        strip = rasterizer.strip(for: previewText, ledsPerArm: geometry.ledsPerArm)
         let offset = scrollingIsPossible ? 0 : -(strip.columns.count / 2)
         previewFrame = composer.frame(from: strip, geometry: geometry, columnOffset: offset)
         scrollEpoch = .now
     }
 
-    /// The strip with a dark gap after it, so a wrapped message never touches its own start.
     private var scrollableStrip: ColumnStrip {
         ColumnStrip(ledsPerArm: strip.ledsPerArm,
                     columns: strip.columns + [UInt16](repeating: 0, count: Motion.scrollGapColumns))
     }
 
     private func persist() {
-        let snapshot = SavedDrafts(slotTexts: slotTexts, selectedSlot: selectedSlot)
+        let snapshot = SavedDrafts(slotTexts: fieldTexts, selectedSlot: focusedField ?? 0)
         Task {
             do { try await messageStore.save(snapshot) } catch { lastError = error.localizedDescription }
         }
@@ -237,7 +253,7 @@ final class FanMessageViewModel {
         transport = transportProvider.makeTransport(for: transportKind)
         status = .disconnected
         lastError = nil
-        lastStored = nil
+        lastSuccess = nil
         geometry = previewGeometry
         refreshPreview()
         Task { await previous.disconnect() }

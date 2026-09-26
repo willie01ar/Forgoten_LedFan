@@ -114,6 +114,19 @@ old head kept reacting to. The app now speaks that protocol, validated byte for 
 against the Rust driver before any packet went out, and on 25 September the first send put
 `HELLO WILLIE` on the blades, upright and readable. The fan is no longer dark.
 
+## The first demo
+
+Eight messages of my own, written from the app and photographed spinning. The letters are
+painted by eleven LEDs on one blade, so a still camera sees a whole revolution at once —
+which is also exactly how your eye sees it.
+
+| | | |
+|:--:|:--:|:--:|
+| ![](docs/reports/images/demo/web/IMG_7212.jpg) | ![](docs/reports/images/demo/web/IMG_7214.jpg) | ![](docs/reports/images/demo/web/IMG_7215.jpg) |
+| ![](docs/reports/images/demo/web/IMG_7217.jpg) | ![](docs/reports/images/demo/web/IMG_7218.jpg) | ![](docs/reports/images/demo/web/IMG_7219.jpg) |
+
+Full-resolution originals are in [`docs/reports/images/demo/`](docs/reports/images/demo/).
+
 ## Credits
 
 - **[pearlfan-rs](https://github.com/mwja/pearlfan-rs)** by Jacob MacKenzie-Websdale,

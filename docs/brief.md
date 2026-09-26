@@ -21,8 +21,8 @@ Type a message, watch the polar preview update live, store it on the simulated t
 full unit test coverage of the domain. No USB required.
 
 **Milestone 2 — the app talks to the fan.** Done (slice 9 and 10, 2026-09-25). The app
-connects to `0x0C45:0x7701`, publishes all eight slots as PearlFan-protocol images (D17,
-D19), verifies the fan's echo of every report (D20), and the fan displays them.
+connects to `0x0C45:0x7701`, publishes the filled messages as PearlFan-protocol images (D17,
+D22), verifies the fan's echo of every report (D20), and the fan displays them.
 The protocol came from the public pearlfan-rs driver after the original head was destroyed
 and a replacement with the same PID was bought; see `protocol-findings.md`, 2026-09-22 on.
 

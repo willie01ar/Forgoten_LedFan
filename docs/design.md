@@ -2,8 +2,18 @@
 
 ## Window
 
-Single window, one view. Vertical stack: preview, then controls, then error area.
-Minimum width 360pt. The preview is the hero — it is the reason the app exists.
+Single window, one view, two columns: the controls on the left, the preview on the right,
+square and centred in its column. Minimum width 760pt; when the horizontal arrangement
+does not fit, at the largest Dynamic Type sizes, `ViewThatFits` stacks the preview above
+the controls instead of clipping. The preview is the hero — it is the reason the app exists.
+
+**Fields.** Eight text fields, one per message, visible at once, each with its own
+`n/26` counter and an accessibility label "Message 1" … "Message 8". Tab moves through
+them in order. The preview follows keyboard focus; with no focus it shows the first
+filled field; with nothing filled it is blank and says so.
+
+**Transport.** USB fan first in the picker and selected at launch (D23). Not connected is
+a resting state in secondary colour; error copy appears only after Connect fails.
 
 ## The preview
 
@@ -13,8 +23,10 @@ proportional arc centred on the top of the disc and the rest stays dark. Each li
 maps to a dot at a radius between hub and tip, glyph tops at the rim so text on the
 upper arc reads upright. A faint ring marks the LED band.
 
-**Send.** The button reads "Send all 8" and a caption under the controls says it publishes all
-eight slots and clears empty ones; the fan's model is the app's model (D19).
+**Send.** The button reads "Send" and a caption says it publishes the filled messages and
+replaces everything the fan holds; empty fields are not sent (D22). Success is one plain
+line, "Sent 3 messages to …"; report counts, bytes, timings and echo statistics never
+appear in the interface (D24). Every transport error message does, verbatim.
 
 **Motion.** A message longer than one revolution scrolls towards the left of the top arc
 at `Motion.scrollColumnsPerSecond`, so new characters enter on the right, and wraps

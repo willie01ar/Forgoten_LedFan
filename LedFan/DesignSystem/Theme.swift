@@ -10,7 +10,10 @@ enum Layout {
     static let simulatorTipRatio: CGFloat = 0.47
     static let ledDiameter: CGFloat = 3.2
     static let cornerRadius: CGFloat = 12
-    static let minimumWindowWidth: CGFloat = 360
+    /// Wide enough for the controls column beside the preview; narrower windows stack them.
+    static let minimumWindowWidth: CGFloat = 760
+    static let controlsMinimumWidth: CGFloat = 340
+    static let counterWidth: CGFloat = 52
     static let shadowRadius: CGFloat = 12
 }
 

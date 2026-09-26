@@ -2,15 +2,42 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var viewModel: FanMessageViewModel
+    @FocusState private var focusedField: Int?
 
     init(viewModel: FanMessageViewModel = FanMessageViewModel()) {
         _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
-        VStack(spacing: Layout.loose) {
-            ScrollingPreview(viewModel: viewModel)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: Layout.loose) {
+                controlsColumn
+                preview
+            }
+            VStack(spacing: Layout.loose) {
+                preview
+                controlsColumn
+            }
+        }
+        .padding(Layout.loose)
+        .frame(minWidth: Layout.minimumWindowWidth)
+        .task { await viewModel.restore() }
+        .onChange(of: focusedField) { _, field in viewModel.focusedField = field }
+        .animation(.default, value: viewModel.lastError)
+        .animation(.default, value: viewModel.lastSuccess)
+        .animation(.default, value: viewModel.status)
+        .animation(.default, value: viewModel.transportKind)
+    }
 
+    // MARK: - Columns
+
+    private var preview: some View {
+        ScrollingPreview(viewModel: viewModel)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private var controlsColumn: some View {
+        VStack(alignment: .leading, spacing: Layout.standard) {
             controls
                 .padding(Layout.standard)
                 .background(.regularMaterial, in: .rect(cornerRadius: Layout.cornerRadius))
@@ -19,16 +46,8 @@ struct ContentView: View {
                 ErrorBanner(message: lastError)
             }
         }
-        .padding(Layout.loose)
-        .frame(minWidth: Layout.minimumWindowWidth)
-        .task { await viewModel.restore() }
-        .animation(.default, value: viewModel.lastError)
-        .animation(.default, value: viewModel.status)
-        .animation(.default, value: viewModel.transportKind)
-        .animation(.default, value: viewModel.selectedSlot)
+        .frame(minWidth: Layout.controlsMinimumWidth, maxWidth: .infinity)
     }
-
-    // MARK: - Sections
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: Layout.standard) {
@@ -42,19 +61,11 @@ struct ContentView: View {
             .disabled(viewModel.status.isBusy)
             .accessibilityLabel("Fan transport")
 
-            LabeledContent("Slot") {
-                Picker("Slot", selection: $viewModel.selectedSlot) {
-                    ForEach(FanMessage.slots, id: \.self) { slot in
-                        Text("\(slot + 1)").tag(slot)
-                    }
+            VStack(spacing: Layout.tight) {
+                ForEach(FanMessageViewModel.fields, id: \.self) { index in
+                    messageField(index)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .accessibilityLabel("Message slot")
             }
-            .font(.callout)
-
-            messageField
 
             captions
 
@@ -70,34 +81,36 @@ struct ContentView: View {
                 }
             }
 
-            if let lastStored = viewModel.lastStored {
-                Label(lastStored, systemImage: "checkmark.circle")
+            if let lastSuccess = viewModel.lastSuccess {
+                Label(lastSuccess, systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
     }
 
-    private var messageField: some View {
+    private func messageField(_ index: Int) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Layout.tight) {
-            TextField("Message", text: $viewModel.message)
-                .textFieldStyle(.roundedBorder)
-                .font(.body)
-                .accessibilityLabel("Message to display on the fan")
+            TextField("Message \(index + 1)", text: Binding(
+                get: { viewModel.text(forField: index) },
+                set: { viewModel.setText($0, forField: index) }
+            ))
+            .textFieldStyle(.roundedBorder)
+            .font(.body)
+            .focused($focusedField, equals: index)
+            .accessibilityLabel("Message \(index + 1)")
 
-            Text(viewModel.counterText)
+            Text(viewModel.counterText(forField: index))
                 .font(.callout.monospacedDigit())
-                .foregroundStyle(viewModel.messageFitsTheFan ? Palette.counterWithinLimit : Palette.counterOverLimit)
-                .accessibilityLabel("\(viewModel.characterCount) of \(FanMessage.maximumCharacters) characters")
+                .frame(width: Layout.counterWidth, alignment: .trailing)
+                .foregroundStyle(viewModel.fieldFitsTheFan(index) ? Palette.counterWithinLimit : Palette.counterOverLimit)
+                .accessibilityLabel("Message \(index + 1): \(viewModel.characterCount(forField: index)) of \(FanMessage.maximumCharacters) characters")
         }
     }
 
     @ViewBuilder
     private var captions: some View {
         if let problem = viewModel.lengthProblem {
-            Caption(text: problem, systemImage: "exclamationmark.circle.fill", tint: Palette.error, prefix: "Problem")
-        }
-        if let problem = viewModel.otherSlotsProblem {
             Caption(text: problem, systemImage: "exclamationmark.circle.fill", tint: Palette.error, prefix: "Problem")
         }
         if let hint = viewModel.blankGlyphHint {
@@ -108,7 +121,7 @@ struct ContentView: View {
             Caption(text: reason, systemImage: "info.circle", tint: .secondary, prefix: "Note")
         }
         if let caveat = viewModel.storeCaveat {
-            Caption(text: caveat, systemImage: "flask", tint: .secondary, prefix: "Note")
+            Caption(text: caveat, systemImage: "cable.connector", tint: .secondary, prefix: "Note")
         }
     }
 
@@ -131,12 +144,12 @@ struct ContentView: View {
                 .accessibilityLabel("Connect to the fan")
             }
 
-            Button("Send all 8") {
+            Button("Send") {
                 Task { await viewModel.sendMessage() }
             }
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.canSend)
-            .accessibilityLabel("Send all eight slots to the fan")
+            .accessibilityLabel("Send the filled messages to the fan")
         }
     }
 }
@@ -232,5 +245,5 @@ private struct ErrorBanner: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(viewModel: FanMessageViewModel(messageStore: TransientMessageStore(), transportKind: .simulated))
 }

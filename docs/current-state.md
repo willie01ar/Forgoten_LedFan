@@ -6,15 +6,15 @@ LedFan is a sandboxed macOS app, Swift 6 with strict concurrency complete, zero
 third-party dependencies, zero build warnings, 150 unit tests and 10 UI tests passing, plus
 2 hardware-checklist UI tests that skip unless a flag and the fan are present.
 
-**What it does.** You type a message into one of eight slots, up to 26 characters, and see
-it rendered as the fan would paint it: a polar preview at a fixed angular resolution, glyph
+**What it does.** You type up to eight messages, 26 characters each, into eight fields
+beside the preview, and see the focused one rendered as the fan would paint it: a polar preview at a fixed angular resolution, glyph
 tops at the rim, short messages centred on the top of the disc, messages longer than a
 revolution scrolling as a marquee with a dark gap before they wrap. Characters with no
 glyph are named in a caption and drawn blank. Over-length drafts are refused visibly and
 never cut. The eight drafts and the selected slot survive relaunch. The simulated fan
-stores messages per slot and confirms with a time-stamped line. The USB fan connects,
-and Send publishes all eight slots as PearlFan-protocol images, verifies the fan's echo of
-every report, logs each report with its reply, and reports what happened. Unplugging the
+stores messages per slot and confirms with a time-stamped line. The USB fan is the
+default; Send publishes the filled fields, compacted, as PearlFan-protocol images, verifies
+the fan's echo of every report into the send log, and says in one plain line what it sent. Unplugging the
 fan drops the app to Disconnected by itself. Lowercase renders as lowercase.
 
 **What is deliberately not there.** Effect controls: the header's open, close and
@@ -59,8 +59,8 @@ LedFan/
     FileMessageStore.swift      JSON in Application Support inside the container; TransientMessageStore for previews and UI tests
   Presentation/
     FanConnectionStatus.swift   connection state enum
-    FanMessageViewModel.swift   @MainActor @Observable; slots, counter, scrolling, restore/save
-    ContentView.swift           dumb view; ScrollingPreview drives a TimelineView, paused for Reduce Motion or an inactive scene
+    FanMessageViewModel.swift   @MainActor @Observable; eight fields, focus-driven preview, compaction, scrolling, restore/save
+    ContentView.swift           two columns via ViewThatFits; eight focused fields; ScrollingPreview drives a TimelineView
     FanSimulatorView.swift      Canvas polar plot
     LaunchOptions.swift         -columnsPerRevolution, -transientStore and -seedDrafts, for evidence and UI tests only
   DesignSystem/
@@ -112,7 +112,8 @@ Tools/                          throwaway probes, outside the app target
 ## Known limits
 
 1. **A Send is the whole set.** The fan keeps exactly what it was last given, so the app
-   publishes all eight slots every time and says so under the button (D19).
+   publishes the filled fields every time, compacted, and says so under the button (D22).
+   A blank image is a real image the fan would cycle through, so empty fields are not sent.
 2. **`HIDFanTransport.placeholderGeometry`** (11 LEDs, 180 columns) is a preview guess.
 3. **At 180 columns per revolution, no message scrolls.** The longest allowed message is
    26 characters, 156 columns at the rasterizer's 6-column pitch, which fits one revolution.
@@ -124,7 +125,8 @@ Tools/                          throwaway probes, outside the app target
 
 ## Deliberate design decisions worth preserving
 
-- The default injected transport is **simulated**, not HID, so the app runs with no hardware.
+- The default transport is the **USB fan** (D23); the simulated one is a segment away, so the
+  app still runs and demos with no hardware, and launching without a fan is calm.
   The ViewModel depends on `FanTransportProviding`, never on a concrete transport; the
   picker in the UI switches kinds, and switching disconnects the previous transport.
 - `IOHIDManagerOpen` is never called. Opening the manager before the device leaves report
