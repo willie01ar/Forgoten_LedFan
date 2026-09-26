@@ -29,9 +29,10 @@ final class LedFanUITests: XCTestCase {
         return app
     }
 
-    /// Window screenshots fail for a window on a secondary display. Ignoring saved application
-    /// state makes each test launch open a fresh window at the default place on the main one.
-    static let mainDisplayWindow = ["-ApplePersistenceIgnoreState", "YES", "-NSQuitAlwaysKeepsWindows", "NO"]
+    /// Window screenshots only work on the primary display. Each test launch ignores saved
+    /// window state and asks the app to place its window there.
+    static let mainDisplayWindow = ["-ApplePersistenceIgnoreState", "YES", "-NSQuitAlwaysKeepsWindows", "NO",
+                                    "-pinWindowToPrimaryDisplay", "YES"]
 
     /// UserDefaults parses launch arguments as old-style plists and mangles asterisks and
     /// quotes, so the seed travels percent-encoded.

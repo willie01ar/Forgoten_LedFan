@@ -12,6 +12,7 @@ enum Layout {
     static let cornerRadius: CGFloat = 12
     /// Wide enough for the controls column beside the preview; narrower windows stack them.
     static let minimumWindowWidth: CGFloat = 760
+    static let idealWindowWidth: CGFloat = 1040
     static let controlsMinimumWidth: CGFloat = 340
     static let counterWidth: CGFloat = 52
     static let shadowRadius: CGFloat = 12

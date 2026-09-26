@@ -20,7 +20,7 @@ struct ContentView: View {
             }
         }
         .padding(Layout.loose)
-        .frame(minWidth: Layout.minimumWindowWidth)
+        .frame(minWidth: Layout.minimumWindowWidth, idealWidth: Layout.idealWindowWidth)
         .task { await viewModel.restore() }
         .onChange(of: focusedField) { _, field in viewModel.focusedField = field }
         .animation(.default, value: viewModel.lastError)
@@ -46,7 +46,9 @@ struct ContentView: View {
                 ErrorBanner(message: lastError)
             }
         }
-        .frame(minWidth: Layout.controlsMinimumWidth, maxWidth: .infinity)
+        // The ideal width equals the minimum so ViewThatFits keeps two columns at any window
+        // width above the minimum; the column then grows into whatever space there is.
+        .frame(minWidth: Layout.controlsMinimumWidth, idealWidth: Layout.controlsMinimumWidth, maxWidth: .infinity)
     }
 
     private var controls: some View {
@@ -85,6 +87,7 @@ struct ContentView: View {
                 Label(lastSuccess, systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -185,6 +188,7 @@ private struct Caption: View {
         Label(text, systemImage: systemImage)
             .font(.caption)
             .foregroundStyle(tint)
+            .fixedSize(horizontal: false, vertical: true)
             .accessibilityLabel("\(prefix): \(text)")
     }
 }
@@ -239,6 +243,7 @@ private struct ErrorBanner: View {
         Label(message, systemImage: "exclamationmark.triangle.fill")
             .font(.callout)
             .foregroundStyle(Palette.error)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel("Error: \(message)")
     }
