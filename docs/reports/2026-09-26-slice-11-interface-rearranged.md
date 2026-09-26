@@ -34,7 +34,8 @@ Echo verification still runs in the transport and lands in the send log.
 ### Task 1 — horizontal layout, then reverted at the owner's request
 Built as the brief asked, checked on the fan, and then reverted the same day: after seeing
 the two columns, the owner preferred the preview on top. The app now stacks the preview
-above the eight fields and controls, minimum width 600pt, ideal 900pt. The screenshots
+above the eight fields and controls, minimum width 600pt, opening at 640pt (the first
+stacked build opened at 900pt, which looked needlessly wide; narrowed on request). The screenshots
 below are the stacked layout that shipped; the two-column build is in the history
 (commits `a4e65ff` and `1c7b776`). The paragraphs that follow describe that build.
 `ViewThatFits(in: .horizontal)` with the controls column and the preview side by side, the

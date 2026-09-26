@@ -3,7 +3,8 @@
 ## Window
 
 Single window, one view, stacked: the preview on top, square and centred, the eight
-fields and controls below it. Minimum width 600pt, ideal 900pt. A two-column arrangement
+fields and controls below it. Minimum width 600pt; it opens at 640pt, compact, and
+grows only if the person widens it. A two-column arrangement
 was built in slice 11 and reverted the same day at the owner's request after seeing it;
 the preview is the hero — it is the reason the app exists — and it reads best on top.
 
