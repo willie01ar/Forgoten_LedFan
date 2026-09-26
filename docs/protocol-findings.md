@@ -1313,3 +1313,11 @@ it. Two possibilities, both cheap to test with no cable swap beyond a normal sen
 
 Test by sending the same message twice with the colour bit toggled and comparing the disc.
 Worth knowing before anyone designs an effects or colour UI — it may already be free.
+
+### 2026-09-26 — Slice 11 hardware check: four filled fields, compacted
+Fan A, switched off, data cable in. The hardware UI test seeded Message 1 `Hello World. I
+hold 8 Msg.`, Message 3 `*Mom Pick me up @4P*`, Message 5 `HELLO WILLIE`, Message 8
+`Message eight`, with the other four empty, connected, and sent. The app published the
+four filled fields as images 0–3 (D22; 160 reports). Success line, verbatim: **"5:10 PM:
+Sent 4 messages to SONiX LED fan."** No error, so every echo matched. Observation after
+the swap pending.
