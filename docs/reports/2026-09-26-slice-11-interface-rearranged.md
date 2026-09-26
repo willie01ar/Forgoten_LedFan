@@ -34,8 +34,14 @@ Echo verification still runs in the transport and lands in the send log.
 ### Task 1 — horizontal layout
 `ViewThatFits(in: .horizontal)` with the controls column and the preview side by side, the
 preview square and centred in its column, and the stacked arrangement (preview above) as
-the fallback. Minimum window width 760pt, controls column at least 340pt, both tokens in
+the fallback. Minimum window width 760pt, ideal 1040pt, controls column at least 340pt, all tokens in
 `Layout`. The preview is a fixed 340pt square, so resizing never distorts it.
+
+One subtlety worth recording: `ViewThatFits` compares each arrangement's *ideal* size to
+the space, and a column of text fields and captions has a large ideal width, so the first
+screenshot came out stacked in a 900pt window. Giving the controls column an ideal width
+equal to its minimum, and letting captions wrap, makes the two-column arrangement fit at
+every width above the minimum and grow into whatever space there is.
 
 ### Task 2 — eight fields
 `FanMessageViewModel` holds `fieldTexts` and exposes `text(forField:)`,
@@ -70,6 +76,16 @@ the interface shows an error, "The fan did not confirm everything it was sent…
 counts. Every `FanTransportError` message reaches the interface unchanged. The transport's
 receipt summary, with its counts, still exists and the per-report echoes are in the send
 log; nothing below the ViewModel was touched to achieve this.
+
+### Evidence plumbing, flagged
+- **One AppKit call.** XCUITest can only capture windows on the primary display, and a
+  fresh SwiftUI window opens on whichever display is active, which follows the pointer.
+  A test-only launch option, `-pinWindowToPrimaryDisplay`, moves the window there with
+  `NSWindow.setFrameOrigin`. It is the only AppKit use in the app and does nothing in
+  normal use.
+- **Seeds are percent-encoded.** `-seedDrafts` values pass through UserDefaults' old-style
+  plist parsing, which turned `*Mom Pick me up @4P*` into `*Mom\ Pick\ me\ up\ @4P*`.
+  Found by the UI test, before it could corrupt the hardware check.
 
 ## The owner's checklist for the hardware check
 
